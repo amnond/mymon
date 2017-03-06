@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<title>WebTail</title>
+<script src="json2.js"></script>
+<script src="jquery.min.js"></script>
+<script src="jquery.handsontable.full.js"></script>
+<script src="bootstrap.min.js"></script>
+<link rel="stylesheet" href="bootstrap.min.css">
+<link rel="stylesheet" media="screen" href="jquery.handsontable.full.css">
+
+<style>
+html, body { height: 100%; width: 100%; margin: 0;}
+body {background-color: gray;}
+#file {
+    overflow-x:hidden;
+    overflow-y:visible;
+    height:92%;
+    background-color: white;
+    font-family:"Helvetica Narrow","Arial Narrow",Courier;
+}
+
+.err {background-color:#ffaaaa;}
+
+span.hl { color:#0000ff; background: yellow;}
+
+</style>
+
+</head>
+<body>
+
+&nbsp;&nbsp;
+<input type="button" class="btn" id='idState' onclick="javascript:togglePause()" value="Pause">
+&nbsp;&nbsp;
+<input type="button" class="btn" onclick="javascript:clearLog()" value="Clear">
+&nbsp;&nbsp;
+<input type="button" class="btn" onclick="javascript:showSettingsModal()" value="Settings...">
+<br>
+<div id="file"></div>
+
+<!------------ Modal Window ------------>
+<div id="modalWindow" class="modal hide fade in">
+    <div class="modal-header">
+        <a class="close" data-dismiss="modal">×</a>
+        <h4>Log Settings</h4>
+
+    </div>
+
+    <div id="modalContent" class="modal-body"></div>
+
+    <div class="modal-footer">
+        <span class="btn btn-success" onclick="applyModal()">Apply</span>
+        <span class="btn" data-dismiss="modal">Close</span>
+    </div>
+</div>
+
+<script type="text/javascript" charset="utf-8">
+
+g_autoScroll = 1;
+g_scrollState = ['Follow','Pause'];
+
+
+if ("MozWebSocket" in window)
+{
+    WebSocket = MozWebSocket;
+}
+
+if (WebSocket)
+{
+    var ws = new WebSocket("ws://__HOST__/tail/");
+    ws.onopen = function () {};
+    ws.onmessage = function (evt)
+    {
+        write_line(evt.data);
+    };
+    ws.onclose = function () {};
+}
+else
+{
+    alert("WebSocket not supported");
+}
+
+//------------------------------------------------------------------------------
+function togglePause()
+{
+    g_autoScroll = 1 - g_autoScroll;
+    if (g_autoScroll) {
+        var elem = document.getElementById('file');
+        elem.scrollTop = elem.scrollHeight;
+    }
+    document.getElementById('idState').value = g_scrollState[ g_autoScroll ];
+}
+
+function clearLog()
+{
+    document.getElementById('file').innerHTML = '';
+}
+
+//------------------------------------------------------------------------------
+function write_line(str)
+{
+    var len = g_data.length;
+
+    for (var i=0; i<len; i++) {
+        var find = g_data[i][0]
+        if (!find)
+            break;
+
+        var rfind = RegExp(find);
+        color = g_data[i][1];
+        str = str.replace(rfind, function (v)
+        {
+            return "<span style='background-color:"+color+"'>" + v + "</span>"
+        });
+    }
+
+    if (str.match(/closed keepalive connection/))
+        return;
+
+    if (str.match(/logger\.lua/))
+        str = '<hr />';
+
+    str = str.replace(/\n/g, "<br />");
+    var elem = document.getElementById('file');
+    var cl = ''
+    if (str.match(/[Ee]rror|[Ff]ail|[Pp]roblem/g))
+        cl = ' class="err"'
+
+    file.innerHTML += '<span' + cl + '>' + str + '</span>';
+    if (g_autoScroll)
+        elem.scrollTop = elem.scrollHeight;
+}
+
+//------------------------------------------------------------------------------
+var g_data;
+var g_newData;
+var g_uglyHack;
+
+var prefs = localStorage.prefs
+if (typeof(prefs) == "undefined") {
+    g_data = [
+        ['("method":"[^"]+"|"response-to":"[^"]+")', "yellow"],
+    ];
+}
+else {
+    g_data = JSON.parse( prefs )
+}
+
+
+//------------------------------------------------------------------------------
+function showSettingsModal(index)
+{
+    $("#modalWindow").modal();
+    g_uglyHack = setInterval( widthReady, 100 );
+}
+
+function cloneArray(arr)
+{
+    return $.map(arr, function (obj) {
+                  return $.extend(true, {}, obj);
+              });
+}
+
+function widthReady()
+{
+    var w = document.getElementById('modalWindow').clientWidth-40;
+    if (w == -40)
+        return;
+
+    clearInterval(g_uglyHack);
+
+    g_newData = cloneArray(g_data);
+    $('#modalContent').handsontable({
+      data: g_newData,
+      colWidths : [w*2/3, w/3],
+      minSpareRows: 1,
+      colHeaders: ["Regular Expression","Background Color"],
+      contextMenu: true
+    });      
+}
+//------------------------------------------------------------------------------
+function applyModal()
+{
+    g_data = cloneArray(g_newData); 
+    var jsonStr = JSON.stringify( g_data );
+    localStorage.prefs = jsonStr;
+    alert(jsonStr);
+    $('.modal.in').modal('hide');
+}
+//------------------------------------------------------------------------------
+</script>
+
+</body>
+</html>

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Demo</title>
+        <meta charset="utf-8">
+        <meta name="description" content="Demo project">
+    </head>
+    <body>
+        <form action='/login' method='post'>
+        Username:<input type='text' name='username' />
+        Password:<input type='text' name='password' />
+        <input type='submit' value="Submit" />
+        {% raw xsrf_form_html() %}
+        </form>
+    </body>
+</html>
