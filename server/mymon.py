@@ -14,10 +14,9 @@ The changes are:
 3 - Uses print instead of sys.stdout.write prior to pointing stdout to the log file.
 4 - Omits try/excepts if they only wrap one error message w/ another.
 
-i - http://stackoverflow.com/questions/3263672/python-the-difference-between-sys-stdout-write-and-print
+http://stackoverflow.com/questions/3263672/python-the-difference-between-sys-stdout-write-and-print
 """
 import atexit
-import datetime
 import os
 import signal
 import sys
@@ -33,6 +32,7 @@ class Daemon(object):
         self.stdout = stdout
         self.stderr = stderr
         self.pid_file = pid_file
+        self.running = False
 
     def del_pid(self):
         """ Delete the pid file. """
@@ -131,21 +131,26 @@ class Daemon(object):
 
     def run(self):
         """ The main loop of the daemon. """
+        self.running = True
         web = Web()
         web.ioloop()        # runs in this thread
 
 
 if __name__ == '__main__':
+    main()
+
+def main():
+    """ Handle daemon requests """
     if len(sys.argv) < 2:
         print "Usage: {0} start|stop|restart".format(sys.argv[0])
         sys.exit(2)
 
     daemon = Daemon('/tmp/daemon_example.pid')
-    if 'start' == sys.argv[1]:
+    if sys.argv[1] == 'start':
         daemon.start()
-    elif 'stop' == sys.argv[1]:
+    elif sys.argv[1] == 'stop':
         daemon.stop()
-    elif 'restart' == sys.argv[1]:
+    elif sys.argv[1] == 'restart':
         daemon.restart()
     else:
         print "Unknown command '{0}'".format(sys.argv[1])
