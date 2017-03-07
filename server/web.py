@@ -4,12 +4,15 @@ The web service implemented via Tornado
 #-*- coding:utf-8 -*-
 
 import os.path
+import json
 import tornado.httpserver
 import tornado.ioloop
 import tornado.web
 import tornado.options
 
 from procmon import Procmon
+
+# http://guillaumevincent.com/2013/02/12/Basic-authentication-on-Tornado-with-a-decorator.html
 
 class BaseHandler(tornado.web.RequestHandler):
     """ Tornado Base """
@@ -21,6 +24,13 @@ class MainHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
         self.render('index.html')
+
+class AjaxHandler(BaseHandler):
+    """ Tornado Ajax """
+    @tornado.web.authenticated
+    def post(self):
+        obj = {"hello":"there"}
+        self.write(json.dumps(obj))
 
 class LoginHandler(BaseHandler):
     """ Tornado attempt to get page if authenticated """
@@ -65,6 +75,7 @@ class LogoutHandler(BaseHandler):
         self.clear_cookie("user")
         self.redirect(self.get_argument("next", self.reverse_url("main")))
 
+
 class Application(tornado.web.Application):
     """ Initialize Tornado settings """
     def __init__(self):
@@ -74,14 +85,17 @@ class Application(tornado.web.Application):
             "login_url": "/login",
             'template_path': os.path.join(base_dir, "templates"),
             'static_path': os.path.join(base_dir, "static"),
-            'debug':True,
-            "xsrf_cookies": True,
+            "static_url_prefix": "/res/",
+            'debug': True,
+            "xsrf_cookies": True
         }
 
         tornado.web.Application.__init__(self, [
+            tornado.web.url(r"/(favicon\.ico)", tornado.web.StaticFileHandler),
             tornado.web.url(r"/", MainHandler, name="main"),
             tornado.web.url(r'/login', LoginHandler, name="login"),
             tornado.web.url(r'/logout', LogoutHandler, name="logout"),
+            tornado.web.url(r"/ajax", AjaxHandler, name="ajax"),
         ], **settings)
 
 class Web(object):

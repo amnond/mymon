@@ -12,7 +12,39 @@
     <body>
         You're in!
         <br />
+        <br />
+        <a onClick="sendAjax()">Send_Ajax</a>
+        <br />
         <a href='/logout'>Logout</a>
+
+        <form id='reqform'>
+            <input type='hidden' id='idreq' name='packet' />
+            {% raw xsrf_form_html() %}
+        </form>
+
     </body>
-    <script type="text/javascript"></script>
+    <script type="text/javascript" src="/res/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript">
+
+        function sendAjax()
+        {
+            var json = {this:"is", a:"test"}
+            postRequest(json, '/ajax', processResult)
+        }
+
+        function processResult(data)
+        {
+            console.log(data)
+        }
+
+        function postRequest( jsonData, url, func )
+        {
+            var jsonStr = JSON.stringify( jsonData );
+            $('#idreq').val( jsonStr );
+            $.post( url,
+                    $('#reqform').serialize(),
+                    func,
+                    "text" );
+        }
+    </script>
 </html>
