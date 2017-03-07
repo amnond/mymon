@@ -24,7 +24,6 @@ import sys
 import time
 
 from web import Web
-from procmon import Procmon
 
 class Daemon(object):
     """ Linux Daemon boilerplate. """
@@ -132,9 +131,6 @@ class Daemon(object):
 
     def run(self):
         """ The main loop of the daemon. """
-        procmon = Procmon()
-        procmon.run()     # runs in separate thread
-
         web = Web()
         web.ioloop()        # runs in this thread
 

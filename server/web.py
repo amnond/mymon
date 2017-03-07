@@ -5,9 +5,8 @@ import tornado.ioloop
 import tornado.web
 import tornado.options
 import os.path
-from tornado.options import define, options
 
-define("port", default=8888, help="run on the given port", type=int)
+from procmon import Procmon
 
 class BaseHandler(tornado.web.RequestHandler):
     def get_current_user(self):
@@ -78,9 +77,16 @@ class Application(tornado.web.Application):
 
 class Web:
     def __init__(self):
-        port = 8879
+        self.port = 8888
 
     def ioloop(self):
-        tornado.options.parse_command_line()
-        Application().listen(options.port)
+        procmon = Procmon()
+        self.procTimer = tornado.ioloop.PeriodicCallback(procmon.monitor, 20000)
+        self.procTimer.start()
+        Application().listen(self.port)
         tornado.ioloop.IOLoop.instance().start()
+
+
+if __name__ == "__main__":
+    web = Web()
+    web.ioloop()
