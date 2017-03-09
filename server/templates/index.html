@@ -6,29 +6,88 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
         <meta name="description" content="Demo project">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
-        <style type="text/css"></style>
+        <link rel="stylesheet" href="/res/css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" media="all" href="/res/css/daterangepicker.css" />
+        <style type="text/css">
+        .opencal {
+            font-size:25px;
+            margin-top: 4px;
+            cursor: pointer;
+        }
+        </style>
     </head>
     <body>
-        You're in!
+    <div class="container">
         <br />
+        <div class="row justify-content-md-center">
+            <div class='col col-lg-2'>
+                You're in.
+            </div>
+            <div class='col col-lg-2'>
+                <a class='btn btn-default' onClick="sendAjax()">Send Ajax</a>
+            </div>
+            <div class='col col-lg-2'>
+                <a class='btn btn-default' href='/logout'>Logout</a>
+            </div>
+            <br />
+        </div>
+
         <br />
-        <a onClick="sendAjax()">Send_Ajax</a>
-        <br />
-        <a href='/logout'>Logout</a>
+
+        <div class="row justify-content-md-center">
+            <div class='col col-lg-2'>
+                <input type="text" id="idcalpick" class="form-control" style='width:250px;'>
+            </div>
+            <div class='col col-lg-2'>
+                <i class="glyphicon glyphicon-calendar opencal"></i>
+            </div>
+        </div>
 
         <form id='reqform'>
             <input type='hidden' id='idreq' name='packet' />
             {% raw xsrf_form_html() %}
         </form>
 
+        <div>
+    </div>
     </body>
-    <script type="text/javascript" src="/res/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="/res/js/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="/res/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/res/js/moment.min.js"></script>
+    <script type="text/javascript" src="/res/js/daterangepicker.js"></script>
     <script type="text/javascript">
+
+        $(document).ready(function() {
+            $('.opencal').click(function() {
+              $('#idcalpick').click();
+            });
+
+            ranges = {
+              'Today': [moment(), moment()],
+              'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+              'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+              'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+              'This Month': [moment().startOf('month'), moment().endOf('month')],
+              'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+            };
+
+
+            $('#idcalpick').daterangepicker({
+                "ranges": ranges,
+                "startDate": moment().subtract(29, 'days'),
+                "endDate": moment()
+            }, function(start, end, label) {
+                console.log(start)
+                console.log(end)
+                console.log(label)
+            });
+        });
 
         function sendAjax()
         {
-            var json = {this:"is", a:"test"}
+            var start = $('#idcalpick').data('daterangepicker').startDate.unix()
+            var end = $('#idcalpick').data('daterangepicker').endDate.unix()
+            var json = {request:'memlog', start:start, end:end};
             postRequest(json, '/ajax', processResult)
         }
 

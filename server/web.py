@@ -29,6 +29,7 @@ class AjaxHandler(BaseHandler):
     """ Tornado Ajax """
     @tornado.web.authenticated
     def post(self):
+        print('>>>'+self.get_argument("packet"))
         obj = {"hello":"there"}
         self.write(json.dumps(obj))
 
