@@ -29,7 +29,10 @@ class PageHandler(BaseHandler):
     """ Tornado Specific page """
     @tornado.web.authenticated
     def get(self, url):
-        self.render(url)
+        try:
+            self.render(url)
+        except IOError:
+            self.write("Page not found.")
 
 
 class AjaxHandler(BaseHandler):
