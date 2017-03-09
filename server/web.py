@@ -25,6 +25,13 @@ class MainHandler(BaseHandler):
     def get(self):
         self.render('index.html')
 
+class PageHandler(BaseHandler):
+    """ Tornado Specific page """
+    @tornado.web.authenticated
+    def get(self, url):
+        self.render(url)
+
+
 class AjaxHandler(BaseHandler):
     """ Tornado Ajax """
     @tornado.web.authenticated
@@ -71,7 +78,7 @@ class LoginHandler(BaseHandler):
 
 
 class LogoutHandler(BaseHandler):
-    """ logging hout handler """
+    """ logging out handler """
     def get(self):
         self.clear_cookie("user")
         self.redirect(self.get_argument("next", self.reverse_url("main")))
@@ -94,6 +101,7 @@ class Application(tornado.web.Application):
         tornado.web.Application.__init__(self, [
             tornado.web.url(r"/(favicon\.ico)", tornado.web.StaticFileHandler),
             tornado.web.url(r"/", MainHandler, name="main"),
+            tornado.web.url(r"/(.*\.html)", PageHandler, name="mymon"),
             tornado.web.url(r'/login', LoginHandler, name="login"),
             tornado.web.url(r'/logout', LogoutHandler, name="logout"),
             tornado.web.url(r"/ajax", AjaxHandler, name="ajax"),

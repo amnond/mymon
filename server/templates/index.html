@@ -71,11 +71,12 @@
               'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
             };
 
-
             $('#idcalpick').daterangepicker({
-                "ranges": ranges,
-                "startDate": moment().subtract(29, 'days'),
-                "endDate": moment()
+                ranges: ranges,
+                startDate: moment().subtract(29, 'days'),
+                endDate: moment(),
+                timePicker: true,
+                timePickerIncrement: 30,
             }, function(start, end, label) {
                 console.log(start)
                 console.log(end)
