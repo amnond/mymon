@@ -3,6 +3,7 @@ Interface for database related actions
 """
 # -*- coding: utf-8 -*-
 
+import os
 import sqlite3 as lite
 import sys
 
@@ -27,7 +28,9 @@ class DB(object):
         get_proc_codes = "SELECT * FROM prcode2name"
 
         try:
-            dbname = '/Users/amnondavid/projects/mymon/server/mon.db'
+            dbpath = os.path.realpath(__file__)
+            dbname = os.path.dirname(dbpath) + '/mon.db'
+            print(dbname)
             self.con = lite.connect(dbname)
             self.con.isolation_level = None
             cur = self.con.cursor()

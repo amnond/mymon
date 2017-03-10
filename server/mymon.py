@@ -136,9 +136,6 @@ class Daemon(object):
         web.ioloop()        # runs in this thread
 
 
-if __name__ == '__main__':
-    main()
-
 def main():
     """ Handle daemon requests """
     if len(sys.argv) < 2:
@@ -155,3 +152,7 @@ def main():
     else:
         print "Unknown command '{0}'".format(sys.argv[1])
         sys.exit(2)
+
+if __name__ == '__main__':
+    main()
+
