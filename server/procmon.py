@@ -1,18 +1,26 @@
 """ Process monitor: scans processes and sends status to database """
 import time
+import json
 
 from subprocess import Popen, PIPE
 
 from db import DB
+from reqhandler import RH
 
 class Procmon(object):
     """ Procmon encapsulates information collection of OS process """
     def __init__(self):
-        self.pdb = DB()
+        RH.register_handler('memlog', self.handle_memlog_req)
 
     def free_mem(self):
         """ caclulate free memory """
         pass
+
+    def handle_memlog_req(self, packet):
+        """ process the requset we regitered to handle """
+        print("=========" + json.dumps(packet))
+        reply = {"hello":"world", "what's":"up?"}
+        return reply
 
     def monitor(self):
         """ scans OS processes and sends to database """
@@ -33,9 +41,9 @@ class Procmon(object):
             sline = out[i].split()
             mem = int(sline[cols[0]].decode('utf-8'))
             proc = ' '.join([x.decode('utf-8') for x in sline[cols[1]:]])
-            pcode = self.pdb.get_code(proc)
+            pcode = DB.get_code(proc)
             proclist.append((now, pcode, mem))
-        self.pdb.add_proc_info(proclist)
+        DB.add_proc_info(proclist)
 
 if __name__ == "__main__":
     PRMON = Procmon()

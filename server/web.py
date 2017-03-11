@@ -12,7 +12,10 @@ import tornado.options
 
 from procmon import Procmon
 
+from reqhandler import RH
+
 # http://guillaumevincent.com/2013/02/12/Basic-authentication-on-Tornado-with-a-decorator.html
+
 
 class BaseHandler(tornado.web.RequestHandler):
     """ Tornado Base """
@@ -39,9 +42,14 @@ class AjaxHandler(BaseHandler):
     """ Tornado Ajax """
     @tornado.web.authenticated
     def post(self):
-        print('>>>'+self.get_argument("packet"))
-        obj = {"hello":"there"}
-        self.write(json.dumps(obj))
+        spacket = self.get_argument("packet")
+        packet = json.loads(spacket)
+        if not "request" in packet:
+            print("Error: Received packet without request:" + spacket)
+            return
+
+        reply = RH.invoke(packet)
+        self.write(json.dumps(reply))
 
 class LoginHandler(BaseHandler):
     """ Tornado attempt to get page if authenticated """

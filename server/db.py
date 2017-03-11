@@ -7,7 +7,7 @@ import os
 import sqlite3 as lite
 import sys
 
-class DB(object):
+class _DB(object):
     """ The DB object which serves as the interface to sqlite operaations """
     def __init__(self):
         self.name2code = {}
@@ -116,3 +116,5 @@ class DB(object):
         cur.execute(query, period)
         rows = cur.fetchall()
         return rows
+
+DB = _DB()
