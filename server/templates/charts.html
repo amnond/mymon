@@ -12,14 +12,18 @@
 </div>
 
 <script>
+        var mappings; 
+        var key_mappings = 'charts:mappings';
+
         $(document).ready(function() {
             /*
             $('.opencal').click(function() {
               $('#idcalpick').click();
             });
             */
+            mappings = UI.get_global(key_mappings)
 
-            ranges = {
+            var ranges = {
               'Today': [moment(), moment()],
               'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
               'Last 7 Days': [moment().subtract(6, 'days'), moment()],
@@ -35,9 +39,9 @@
                 timePicker: true,
                 timePickerIncrement: 30,
             }, function(start, end, label) {
-                console.log(start)
-                console.log(end)
-                console.log(label)
+                // console.log(start)
+                // console.log(end)
+                // console.log(label)
             });
         });
 
@@ -46,12 +50,30 @@
             var start = $('#idcalpick').data('daterangepicker').startDate.unix()
             var end = $('#idcalpick').data('daterangepicker').endDate.unix()
             var json = {request:'memlog', start:start, end:end};
+            if (mappings == null) {
+                // No mappings from process code to process name yet, request them
+                // to be returned with the processes info
+                json['get_mappings'] = 1;
+            }
+            UI.show_wait();
             postRequest(json, '/ajax', processResult)
         }
 
         function processResult(data)
         {
-            console.log(data)
+            UI.hide_wait();
+            var reply = JSON.parse(data);
+            var data = reply.data
+            if ('mappings' in data) {
+                mappings = data.mappings;
+            }
+            if ('new_mappings' in data) {
+                for (code in data.new_mappings) {
+                    mappings[code] = data.new_mappings[code];
+                }
+            }
+            //console.log(reply)
+            UI.set_global(key_mappings, mappings);
         }
         
 </script>

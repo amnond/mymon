@@ -18,7 +18,7 @@
     <link href="/res/css/metisMenu.min.css" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link href="/res/css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="/res/css/sb-admin-2.css" rel="stylesheet">
 
     <!-- Custom Fonts -->
     <link href="/res/css/font-awesome.min.css" rel="stylesheet" type="text/css">
@@ -253,7 +253,7 @@
                     <a class="dropdown-toggle" data-toggle="dropdown" href="#">
                         <i class="fa fa-user fa-fw"></i> <i class="fa fa-caret-down"></i>
                     </a>
-                    <ul class="dropdown-menu dropdown-user">
+                    <ul class="dropdown-menu dropdown-user" style="left:0px">
                         <!--
                         <li><a href="#"><i class="fa fa-user fa-fw"></i> User Profile</a>
                         </li>
@@ -388,22 +388,47 @@
     </div>
     <!-- /#wrapper -->
 
-    <!-- jQuery -->
+    <!-- jQuery (http://jquery.com/ License:Apache) -->
     <script src="/res/js/jquery-3.1.1.min.js"></script>
 
-    <!-- Bootstrap Core JavaScript -->
+    <!-- Bootstrap Core JavaScript (http://getbootstrap.com/ License:MIT)-->
     <script src="res/js/bootstrap.min.js"></script>
 
-    <!-- Metis Menu Plugin JavaScript -->
+    <!-- Bootstrap simple dialog box utility (http://bootboxjs.com/ License:MIT) -->
+    <script src="res/js/bootbox.min.js"></script>
+
+    <!-- Metis Menu Plugin JavaScript (https://github.com/onokumus/metismenu License:MIT) -->
     <script src="/res/js/metisMenu.min.js"></script>
 
-    <!-- Custom Theme JavaScript -->
+    <!-- Start Bootstrap Custom Theme JavaScript 
+         (https://startbootstrap.com/template-overviews/sb-admin-2/ License:MIT) -->
     <script src="/res/js/sb-admin-2.min.js"></script>
 
+    <!-- Javascrpit date manipulations (https://momentjs.com/ License:MIT) -->
     <script src="/res/js/moment.min.js"></script>
+
+    <!-- Bootstrap date range picker (http://www.daterangepicker.com/ License:MIT) -->
     <script src="/res/js/daterangepicker.js"></script>
 
     <script>
+        var g_globals = {}
+        var g_wait_dialog;
+
+        var UI = {
+            get_global: function(key) { return (key in g_globals) ? g_globals[key] : null },
+            set_global: function(key, val) { g_globals[key] = val; },
+            show_wait: function() {
+                g_wait_dialog = bootbox.dialog({
+                    title: 'Fetching data...',
+                    message: '<p><i class="fa fa-spin fa-spinner"></i> Loading...</p>'
+                });
+            },
+            hide_wait: function() {
+                g_wait_dialog.modal('hide');
+            }
+
+        }
+
         function load(page) {
             $( '#pageview' ).hide();
             $( '#loading' ).show()

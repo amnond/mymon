@@ -19,7 +19,11 @@ class Procmon(object):
     def handle_memlog_req(self, packet):
         """ process the requset we regitered to handle """
         print("=========" + json.dumps(packet))
-        reply = {"hello":"world", "what's":"up?"}
+        start = packet['start']
+        end = packet['end']
+        mappings = 'get_mappings' in packet
+        info = DB.get_proc_info(start, end, mappings)
+        reply = {"reply-to":"meminfo", "data":info}
         return reply
 
     def monitor(self):

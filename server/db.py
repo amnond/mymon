@@ -4,15 +4,17 @@ Interface for database related actions
 # -*- coding: utf-8 -*-
 
 import os
-import sqlite3 as lite
 import sys
+import copy
+import sqlite3 as lite
 
 class _DB(object):
     """ The DB object which serves as the interface to sqlite operaations """
     def __init__(self):
         self.name2code = {}
         self.code2name = {}
-        self.new_mappings = []
+        self.new_mappings_for_db = []
+        self.new_mappings_for_web_client = {}
         create_procinfo_table = "CREATE TABLE IF NOT EXISTS procinfo \
                                   ( `utime`  INTEGER, \
                                     `prcode` INTEGER, \
@@ -81,10 +83,12 @@ class _DB(object):
     def get_code(self, name):
         """Given a process name, return it's unique code"""
         if not name in self.name2code:
+            # this is a new process name. Create a code for it and add it
             self.next_proc_code += 1
             self.name2code[name] = self.next_proc_code
             self.code2name[self.next_proc_code] = name
-            self.new_mappings.append((self.next_proc_code, name))
+            self.new_mappings_for_db.append((self.next_proc_code, name))
+            self.new_mappings_for_web_client[self.next_proc_code] = name
             return self.next_proc_code
         return self.name2code[name]
 
@@ -96,25 +100,33 @@ class _DB(object):
         try:
             cur = self.con.cursor()
             cur.execute("begin")
-            if len(self.new_mappings):
-                cur.executemany("INSERT INTO prcode2name VALUES(?, ?)", self.new_mappings)
+            if len(self.new_mappings_for_db):
+                cur.executemany("INSERT INTO prcode2name VALUES(?, ?)", self.new_mappings_for_db)
             cur.executemany("INSERT INTO procinfo VALUES(?, ?, ?)", procs_info)
             cur.execute("commit")
         except self.con.Error:
             print("add_proc_info failed!")
             cur.execute("rollback")
-        self.new_mappings = []
+        self.new_mappings_for_db = []
 
-    def get_proc_info(self, start_time, end_time):
+    def get_proc_info(self, start_time, end_time, mapping):
         """-----------------------------------------------
         Input: time range for process info
         Returns: tuples of time, process name, memory used
         """
         period = (start_time, end_time)
         cur = self.con.cursor()
-        query = "SELECT * FROM procinfo WHERE utime >= ? AND utime <= ?"
+        query = "SELECT utime, prcode, memory \
+                 FROM procinfo WHERE utime >= ? AND utime <= ? \
+                 LIMIT 5000"
         cur.execute(query, period)
         rows = cur.fetchall()
-        return rows
+        new_mappings = copy.deepcopy(self.new_mappings_for_web_client)
+        self.new_mappings_for_web_client = {}
+        reply = {"processes":rows, "new_mappings":new_mappings}
+        if mapping:
+            reply["mappings"] = self.code2name
+        return reply
+
 
 DB = _DB()
