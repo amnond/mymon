@@ -123,7 +123,7 @@ class Web(object):
     def __init__(self):
         self.port = 8888
         self.proc_timer = None
-        self.sinterval = 20000
+        self.sinterval = 10000
 
     def set_config(self, conf):
         """ Set various web server settings """

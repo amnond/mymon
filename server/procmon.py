@@ -7,6 +7,16 @@ from subprocess import Popen, PIPE
 from db import DB
 from reqhandler import RH
 
+def procname(proc):
+    end = proc.find(' -')
+    if end == -1:
+        end = len(proc)
+    proc = proc[0:end]
+    start = proc[0:end].rfind('/')
+    if start == -1:
+        start = 0
+    return proc[start+1:]
+
 class Procmon(object):
     """ Procmon encapsulates information collection of OS process """
     def __init__(self):
@@ -45,6 +55,7 @@ class Procmon(object):
             sline = out[i].split()
             mem = int(sline[cols[0]].decode('utf-8'))
             proc = ' '.join([x.decode('utf-8') for x in sline[cols[1]:]])
+            proc = procname(proc)
             pcode = DB.get_code(proc)
             proclist.append((now, pcode, mem))
         DB.add_proc_info(proclist)

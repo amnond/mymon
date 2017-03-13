@@ -116,10 +116,17 @@ class _DB(object):
         """
         period = (start_time, end_time)
         cur = self.con.cursor()
-        query = "SELECT utime, prcode, memory \
-                 FROM procinfo WHERE utime >= ? AND utime <= ? \
-                 ORDER BY utime DESC \
-                 LIMIT 20000"
+
+        query = "SELECT T1.utime, T1.prcode, T1.memory \
+                 FROM procinfo AS T1,\
+                    (SELECT prcode, avg(memory) AS avgm \
+                    from procinfo \
+                    where utime >= ? and utime <= ? \
+                    GROUP BY prcode \
+                    ORDER BY avgm desc \
+                    LIMIT 10) AS T2 \
+                 WHERE T1.prcode = T2.prcode"
+
         cur.execute(query, period)
         rows = cur.fetchall()
         new_mappings = copy.deepcopy(self.new_mappings_for_web_client)

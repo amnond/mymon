@@ -218,7 +218,7 @@ div.external-legend {
         return (crc ^ (-1)) >>> 0;
     };
 
-    function str2col(str) {
+    function str2color(str) {
         var hexstr = crc32(str).toString(16).substr(0,6)
         var pad = '000000'
         var colstr = (pad + hexstr).slice(-pad.length);
@@ -237,26 +237,38 @@ div.external-legend {
     {
         groups = new vis.DataSet();
 
-        var sorted = sortConsumersDesc(processes);
-        var maxprocs = 10;
-        var numprocs = (sorted.length < maxprocs) ? sorted.length : maxprocs;
-        
-        var included_procs = {};
-        for (var i=0; i<numprocs; i++) {
-            var code = sorted[i].code;
-            included_procs[code] = true;
+        var items = [];
+
+        var displayed_processes = {};
+
+        var start = Date.now();
+        for (var i=0; i<processes.length; i++) {
+            var proc = processes[i];
+            var code = parseInt(proc[1]);
+            var when = parseInt(proc[0]) * 1000;
+            var mem  = parseInt(proc[2]);
+            items.push({x:new Date(when), y:mem, group: code});
+            displayed_processes[code] = true;
+            if (start > when) {
+                start = when;
+            }
+        }
+
+        for (code in displayed_processes) {
             var name = mappings[code];
-            var col = str2col(name)
+            var col = str2color(name)
             // Every separate process will be assigned with its own vis.js group
             var res = groups.add({
                 id: code,
                 content: name,
                 style:  "fill: #ffffff; fill-opacity:0; stroke-width:2px; stroke: " + col + ";",
                 options: {
+                    /*
                     drawPoints: {
                         style: 'circle',
                         styles: 'fill:'+ col +'; stroke:'+ col +'; stroke-width:1;'
                     }
+                    */
                 }
             });
             console.log("result for group.add("+code+") is " + res);
@@ -264,28 +276,12 @@ div.external-legend {
 
         var container = document.getElementById('memchart');
 
-        var items = [];
-
-        var start = Date.now();
-        for (var i=0; i<processes.length; i++) {
-            var proc = processes[i];
-            var code = parseInt(proc[1]);
-            if (!(code in included_procs)) {
-                // not in the max num of processes with highest memory, so
-                // this group will not exist in the vis.js graph
-                continue;
-            }
-            var when = parseInt(proc[0]) * 1000;
-            var mem  = parseInt(proc[2]);
-            items.push({x:new Date(when), y:mem, group: code});
-            if (start > when) {
-                //console.log(new Date(start))
-                start = when;
-            }
-        }
-
         var dataset = new vis.DataSet(items);
         var options = {
+            sampling: true,
+            drawPoints: {enabled:false, size:3},
+            interpolation: false,
+
             dataAxis: {showMinorLabels: false},
             start: start,
             end: Date.now()
