@@ -30,6 +30,17 @@
         <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
 
+
+   <!-- TODO: for all the css files below and their corresponding js files, 
+        iterate here on server side (i.e Python Tornado scriptingI) and get them
+        from the directory of the appropriate plugin.
+        Later versions can enable downloading downloading and installing mymon
+        plugins from the UI
+    -->
+
+    <!-- Page specific css from here on -->
+
+    <link rel="stylesheet" type="text/css" media="all" href="/res/css/vis-timeline-graph2d.min.css" />
     <link rel="stylesheet" type="text/css" media="all" href="/res/css/daterangepicker.css" />
 
     <style>
@@ -375,9 +386,7 @@
             </div>
             <div id="pageview" class="container-fluid">
             </div>
-            <!-- /.container-fluid -->
         </div>
-        <!-- /#page-wrapper -->
         <!----------------------------------------------------------------------->
 
         <form id='reqform'>
@@ -404,29 +413,65 @@
          (https://startbootstrap.com/template-overviews/sb-admin-2/ License:MIT) -->
     <script src="/res/js/sb-admin-2.min.js"></script>
 
+   <!-- TODO: for all the JS libraries below and their corresponding CSS files, 
+        iterate here on server side (i.e Python Tornado scriptingI) and get them
+        from the directory of the appropriate plugin.
+        Later versions can enable downloading downloading and installing mymon
+        plugins from the UI
+    -->
+
     <!-- Javascrpit date manipulations (https://momentjs.com/ License:MIT) -->
     <script src="/res/js/moment.min.js"></script>
 
     <!-- Bootstrap date range picker (http://www.daterangepicker.com/ License:MIT) -->
     <script src="/res/js/daterangepicker.js"></script>
 
+    <!-- vis,js (http://visjs.org/ License: Apace 2.0 or MIT) -->
+    <script src="/res/js/vis-timeline-graph2d.min.js"></script>
+
     <script>
         var g_globals = {}
+        
         var g_wait_dialog;
 
+        function  show_wait() {
+            g_wait_dialog = bootbox.dialog({
+                title: 'Fetching data...',
+                message: '<p><i class="fa fa-spin fa-spinner"></i> Loading...</p>'
+            });
+        }
+
+        function hide_wait() {
+            g_wait_dialog.modal('hide');
+        }
+
+        // Interface for various views loaded into #pageview
         var UI = {
             get_global: function(key) { return (key in g_globals) ? g_globals[key] : null },
             set_global: function(key, val) { g_globals[key] = val; },
-            show_wait: function() {
-                g_wait_dialog = bootbox.dialog({
-                    title: 'Fetching data...',
-                    message: '<p><i class="fa fa-spin fa-spinner"></i> Loading...</p>'
-                });
+            postRequestSilent: function( jsonData, callback ) {
+                _postRequest(jsonData, callback);
             },
-            hide_wait: function() {
-                g_wait_dialog.modal('hide');
+            postRequest: function( jsonData, callback ) {
+                show_wait()
+                _postRequest(jsonData, function(data) {
+                    hide_wait()
+                    if (typeof(callback)=='function') {
+                        callback(data);
+                    }
+                });
             }
+        }
 
+        function  _postRequest( jsonData, callback )
+        {
+            var url = '/ajax'
+            var jsonStr = JSON.stringify( jsonData );
+            $('#idreq').val( jsonStr );
+            $.post( url,
+                    $('#reqform').serialize(),
+                    callback,
+                    "text" );
         }
 
         function load(page) {
@@ -441,16 +486,6 @@
         $(document).ready(function() {
             load('dashboard')
         });
-
-        function postRequest( jsonData, url, func )
-        {
-            var jsonStr = JSON.stringify( jsonData );
-            $('#idreq').val( jsonStr );
-            $.post( url,
-                    $('#reqform').serialize(),
-                    func,
-                    "text" );
-        }
         
     </script>
 </body>

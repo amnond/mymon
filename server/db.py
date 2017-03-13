@@ -118,6 +118,7 @@ class _DB(object):
         cur = self.con.cursor()
         query = "SELECT utime, prcode, memory \
                  FROM procinfo WHERE utime >= ? AND utime <= ? \
+                 ORDER BY utime DESC \
                  LIMIT 5000"
         cur.execute(query, period)
         rows = cur.fetchall()

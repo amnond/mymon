@@ -1,3 +1,82 @@
+<style type="text/css">
+.vis-point {
+    stroke-width:2px;
+    fill-opacity:1.0;
+}
+
+.vis-legend-background {
+    stroke-width:1px;
+    fill-opacity:0.9;
+    fill: #ffffff;
+    stroke: #c2c2c2;
+}
+
+.vis-outline {
+    stroke-width:1px;
+    fill-opacity:1;
+    fill: #ffffff;
+    stroke: #e5e5e5;
+}
+
+.vis-icon-fill {
+    fill-opacity:0.3;
+    stroke: none;
+}
+
+div.description-container {
+    float:left;
+    height:30px;
+    width:160px;
+    padding-left:5px;
+    padding-right:5px;
+    line-height: 30px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* So that we'll see the end of the string */
+    direction:rtl;
+    text-align:left;
+}
+
+div.icon-container {
+    float:left;
+}
+
+div.legend-element-container {
+    display:inline-block;
+    width:200px;
+    height:30px;
+    border-style:solid;
+    border-width:1px;
+    border-color: #e0e0e0;
+    background-color: #ffffff;
+    margin:4px;
+    padding:4px;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    cursor:pointer;
+}
+div.legend-element-container.hidden {
+    background-color: #d3e6ff;
+}
+
+svg.legend-icon {
+    width:30px;
+    height:30px;
+}
+
+div.external-legend {
+    position:relative;
+    margin-left: -5px;
+    width: 100%;
+}
+</style>
+
+
 <div class="row">
     <div class="col-lg-12">
         <h1 class="page-header">charts</h1>
@@ -7,6 +86,10 @@
 
         <br />
         <a class='btn btn-default' onClick="sendDateRange()">Get Data</a>
+
+        <div id="Legend" class="external-legend"></div>
+        <div id="memchart"></div>
+
 
     </div>
 </div>
@@ -39,8 +122,6 @@
                 timePicker: true,
                 timePickerIncrement: 30,
             }, function(start, end, label) {
-                // console.log(start)
-                // console.log(end)
                 // console.log(label)
             });
         });
@@ -55,13 +136,11 @@
                 // to be returned with the processes info
                 json['get_mappings'] = 1;
             }
-            UI.show_wait();
-            postRequest(json, '/ajax', processResult)
+            UI.postRequest(json, processResult)
         }
 
         function processResult(data)
         {
-            UI.hide_wait();
             var reply = JSON.parse(data);
             var data = reply.data
             if ('mappings' in data) {
@@ -74,6 +153,166 @@
             }
             //console.log(reply)
             UI.set_global(key_mappings, mappings);
+            displayResults(data.processes);
         }
+
+        // http://stackoverflow.com/questions/18638900/javascript-crc32
+        // http://stackoverflow.com/users/1775178/alex
+        var makeCRCTable = function(){
+            var c;
+            var crcTable = [];
+            for(var n =0; n < 256; n++){
+                c = n;
+                for(var k =0; k < 8; k++){
+                    c = ((c&1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
+                }
+                crcTable[n] = c;
+            }
+            return crcTable;
+        }
+
+        var crc32 = function(str) {
+            var crcTable = window.crcTable || (window.crcTable = makeCRCTable());
+            var crc = 0 ^ (-1);
+
+            for (var i = 0; i < str.length; i++ ) {
+                crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];
+            }
+
+            return (crc ^ (-1)) >>> 0;
+        };
+
+        function str2col(str) {
+            var hexstr = crc32(str).toString(16).substr(0,6)
+            var pad = '000000'
+            var colstr = (pad + hexstr).slice(-pad.length);
+            var res = "#";
+            for (var i=0; i<6; i+=2) {
+                var col = colstr.substr(i,2);
+                var num = parseInt(col, 16);
+                if (num > 245) col = 'F0';
+                if (num < 10) col = '0A';
+                res += num;
+            }
+            return res;
+        }
+
+    function displayResults(processes)
+    {
+        var groups = new vis.DataSet();
+
+        for (code in mappings) {
+            var name = mappings[code];
+            var col = str2col(name)
+            var res = groups.add({
+                id: code,
+                content: name,
+                style:  "fill: #ffffff; fill-opacity:0; stroke-width:2px; stroke: " + col + ";",
+                options: {
+                    drawPoints: {
+                        style: 'circle',
+                        styles: 'fill:'+ col +'; stroke:'+ col +'; stroke-width:1;'
+                    }
+                }
+            });
+            console.log("result for group.add("+code+") is " + res);
+        }
+
+        var container = document.getElementById('memchart');
+
+        var items = [];
+
+        var start = Date.now();
+        for (var i=0; i<processes.length; i++) {
+            var proc = processes[i];
+            var when = parseInt(proc[0]) * 1000;
+            var code = parseInt(proc[1]);
+            var mem  = parseInt(proc[2]);
+            items.push({x:new Date(when), y:mem, group: code});
+            if (start > when) {
+                //console.log(new Date(start))
+                start = when;
+            }
+        }
+
+        var dataset = new vis.DataSet(items);
+        var options = {
+            dataAxis: {showMinorLabels: false},
+            start: start,
+            end: Date.now()
+        };
+
+        var graph2d = new vis.Graph2d(container, items, groups, options);
+
+        populateExternalLegend(graph2d, groups);
+    }
+
+    /**
+    * this function fills the external legend with content using the getLegend() function.
+    */
+    function populateExternalLegend(graph2d, groups) {
+        var groupsData = groups.get();
+        var legendDiv = document.getElementById("Legend");
+        legendDiv.innerHTML = "";
+
+        // get for all groups:
+        for (var i = 0; i < groupsData.length; i++) {
+
+            // get the legend for this group.
+            var legend = graph2d.getLegend(groupsData[i].id,30,30);
+            if (typeof(legend.icon)=='undefined') {
+                console.log("Error: can't find icon for "+groupsData[i].id)
+                continue;
+            }           
+            // create divs
+            var containerDiv = document.createElement("div");
+            var iconDiv = document.createElement("div");
+            var descriptionDiv = document.createElement("div");
+
+            // give divs classes and Ids where necessary
+            containerDiv.className = 'legend-element-container';
+            containerDiv.id = groupsData[i].id + "_legendContainer"
+            iconDiv.className = "icon-container";
+            descriptionDiv.className = "description-container";
+
+            // append class to icon. All styling classes from the vis.css/vis-timeline-graph2d.min.css have been copied over into the head here to be able to style the
+            // icons with the same classes if they are using the default ones.
+            legend.icon.setAttributeNS(null, "class", "legend-icon");
+
+            // append the legend to the corresponding divs
+            iconDiv.appendChild(legend.icon);
+            descriptionDiv.innerHTML = legend.label;
+
+            descriptionDiv.style.textAlign = "left";
+            descriptionDiv.setAttribute("data-toggle", "tooltip")
+            descriptionDiv.setAttribute("title", legend.label)
+            containerDiv.appendChild(iconDiv);
+            containerDiv.appendChild(descriptionDiv);
+
+            // append to the legend container div
+            legendDiv.appendChild(containerDiv);
+
+            // bind click event to this legend element.
+            containerDiv.onclick = toggleGraph.bind(this,groupsData[i].id);
+        }
+    }
+
+    /**
+    * This function switchs the visible option of the selected group on an off.
+    * @param groupId
+    */
+    function toggleGraph(groupId) {
+        // get the container that was clicked on.
+        var container = document.getElementById(groupId + "_legendContainer")
+        // if visible, hide
+        if (graph2d.isGroupVisible(groupId) == true) {
+            groups.update({id:groupId, visible:false});
+            container.className = container.className + " hidden";
+        }
+        else { // if invisible, show
+            groups.update({id:groupId, visible:true});
+            container.className = container.className.replace("hidden","");
+        }
+    }
         
 </script>
