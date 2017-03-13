@@ -45,7 +45,7 @@ div.icon-container {
 div.legend-element-container {
     display:inline-block;
     width:200px;
-    height:30px;
+    height:40px;
     border-style:solid;
     border-width:1px;
     border-color: #e0e0e0;
@@ -60,7 +60,7 @@ div.legend-element-container {
     user-select: none;
     cursor:pointer;
 }
-div.legend-element-container.hidden {
+div.legend-element-container.switched_off {
     background-color: #d3e6ff;
 }
 
@@ -87,123 +87,167 @@ div.external-legend {
         <br />
         <a class='btn btn-default' onClick="sendDateRange()">Get Data</a>
 
-        <div id="Legend" class="external-legend"></div>
-        <div id="memchart"></div>
-
+        <div id="visjs">
+        </div>
 
     </div>
 </div>
 
 <script>
-        var mappings; 
-        var key_mappings = 'charts:mappings';
+    var mappings; 
+    var key_mappings = 'charts:mappings';
+    var graph2d;
+    var groups;
 
-        $(document).ready(function() {
-            /*
-            $('.opencal').click(function() {
-              $('#idcalpick').click();
-            });
-            */
-            mappings = UI.get_global(key_mappings)
-
-            var ranges = {
-              'Today': [moment(), moment()],
-              'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-              'Last 7 Days': [moment().subtract(6, 'days'), moment()],
-              'Last 30 Days': [moment().subtract(29, 'days'), moment()],
-              'This Month': [moment().startOf('month'), moment().endOf('month')],
-              'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
-            };
-
-            $('#idcalpick').daterangepicker({
-                ranges: ranges,
-                startDate: moment().subtract(29, 'days'),
-                endDate: moment(),
-                timePicker: true,
-                timePickerIncrement: 30,
-            }, function(start, end, label) {
-                // console.log(label)
-            });
+    $(document).ready(function() {
+        /*
+        $('.opencal').click(function() {
+            $('#idcalpick').click();
         });
+        */
+        mappings = UI.get_global(key_mappings)
 
-        function sendDateRange()
-        {
-            var start = $('#idcalpick').data('daterangepicker').startDate.unix()
-            var end = $('#idcalpick').data('daterangepicker').endDate.unix()
-            var json = {request:'memlog', start:start, end:end};
-            if (mappings == null) {
-                // No mappings from process code to process name yet, request them
-                // to be returned with the processes info
-                json['get_mappings'] = 1;
-            }
-            UI.postRequest(json, processResult)
-        }
-
-        function processResult(data)
-        {
-            var reply = JSON.parse(data);
-            var data = reply.data
-            if ('mappings' in data) {
-                mappings = data.mappings;
-            }
-            if ('new_mappings' in data) {
-                for (code in data.new_mappings) {
-                    mappings[code] = data.new_mappings[code];
-                }
-            }
-            //console.log(reply)
-            UI.set_global(key_mappings, mappings);
-            displayResults(data.processes);
-        }
-
-        // http://stackoverflow.com/questions/18638900/javascript-crc32
-        // http://stackoverflow.com/users/1775178/alex
-        var makeCRCTable = function(){
-            var c;
-            var crcTable = [];
-            for(var n =0; n < 256; n++){
-                c = n;
-                for(var k =0; k < 8; k++){
-                    c = ((c&1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
-                }
-                crcTable[n] = c;
-            }
-            return crcTable;
-        }
-
-        var crc32 = function(str) {
-            var crcTable = window.crcTable || (window.crcTable = makeCRCTable());
-            var crc = 0 ^ (-1);
-
-            for (var i = 0; i < str.length; i++ ) {
-                crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];
-            }
-
-            return (crc ^ (-1)) >>> 0;
+        var ranges = {
+            'Today': [moment(), moment()],
+            'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+            'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+            'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+            'This Month': [moment().startOf('month'), moment().endOf('month')],
+            'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
         };
 
-        function str2col(str) {
-            var hexstr = crc32(str).toString(16).substr(0,6)
-            var pad = '000000'
-            var colstr = (pad + hexstr).slice(-pad.length);
-            var res = "#";
-            for (var i=0; i<6; i+=2) {
-                var col = colstr.substr(i,2);
-                var num = parseInt(col, 16);
-                if (num > 245) col = 'F0';
-                if (num < 10) col = '0A';
-                res += num;
-            }
-            return res;
+        $('#idcalpick').daterangepicker({
+            ranges: ranges,
+            startDate: moment().subtract(29, 'days'),
+            endDate: moment(),
+            timePicker: true,
+            timePickerIncrement: 30,
+        }, function(start, end, label) {
+            // console.log(label)
+        });
+    });
+
+    function sendDateRange()
+    {
+        var start = $('#idcalpick').data('daterangepicker').startDate.unix()
+        var end = $('#idcalpick').data('daterangepicker').endDate.unix()
+        var json = {request:'memlog', start:start, end:end};
+        if (mappings == null) {
+            // No mappings from process code to process name yet, request them
+            // to be returned with the processes info
+            json['get_mappings'] = 1;
         }
+
+        document.getElementById('visjs').innerHTML = '';
+        graph2d = null;
+        groups = null;
+
+        UI.postRequest(json, processResult)
+    }
+
+    function processResult(data)
+    {
+        var visdisplay = '<div id="Legend" class="external-legend"></div>';
+        visdisplay += '<div id="memchart"></div>';
+        document.getElementById('visjs').innerHTML = visdisplay;
+
+        var reply = JSON.parse(data);
+        var data = reply.data
+        if ('mappings' in data) {
+            mappings = data.mappings;
+        }
+        if ('new_mappings' in data) {
+            for (code in data.new_mappings) {
+                mappings[code] = data.new_mappings[code];
+            }
+        }
+        //console.log(reply)
+        UI.set_global(key_mappings, mappings);
+        displayResults(data.processes);
+    }
+
+    function sortConsumersDesc(processes)
+    {
+        // returns processes sorted descendingly by average memory consumption
+        // within the time frame they were monitored
+        var mem_averages = {};
+        for (var i=0; i<processes.length; i++) {
+            var proc = processes[i];
+            var code = parseInt(proc[1]);
+            var mem  = parseInt(proc[2]);
+            if (!(code in mem_averages)) {
+                mem_averages[code] = {sum:0, count:0};                   
+            }
+            var prev_code_info = mem_averages[code];
+            prev_code_info.sum += mem;
+            prev_code_info.count++;
+        }
+        var result = [];
+        for (code in mem_averages) {
+            var code_info = mem_averages[code];
+            var avg = code_info.sum / code_info.count;
+            result.push({code:code, avg:avg});
+        }
+        result.sort(function(a, b) {return a.avg < b.avg});
+        return result;
+    }
+
+    // http://stackoverflow.com/questions/18638900/javascript-crc32
+    // http://stackoverflow.com/users/1775178/alex
+    var makeCRCTable = function(){
+        var c;
+        var crcTable = [];
+        for(var n =0; n < 256; n++){
+            c = n;
+            for(var k =0; k < 8; k++){
+                c = ((c&1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
+            }
+            crcTable[n] = c;
+        }
+        return crcTable;
+    }
+
+    var crc32 = function(str) {
+        var crcTable = window.crcTable || (window.crcTable = makeCRCTable());
+        var crc = 0 ^ (-1);
+
+        for (var i = 0; i < str.length; i++ ) {
+            crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];
+        }
+
+        return (crc ^ (-1)) >>> 0;
+    };
+
+    function str2col(str) {
+        var hexstr = crc32(str).toString(16).substr(0,6)
+        var pad = '000000'
+        var colstr = (pad + hexstr).slice(-pad.length);
+        var res = "#";
+        for (var i=0; i<6; i+=2) {
+            var col = colstr.substr(i,2);
+            var num = parseInt(col, 16);
+            if (num > 245) col = 'F0';
+            if (num < 10) col = '0A';
+            res += num;
+        }
+        return res;
+    }
 
     function displayResults(processes)
     {
-        var groups = new vis.DataSet();
+        groups = new vis.DataSet();
 
-        for (code in mappings) {
+        var sorted = sortConsumersDesc(processes);
+        var maxprocs = 10;
+        var numprocs = (sorted.length < maxprocs) ? sorted.length : maxprocs;
+        
+        var included_procs = {};
+        for (var i=0; i<numprocs; i++) {
+            var code = sorted[i].code;
+            included_procs[code] = true;
             var name = mappings[code];
             var col = str2col(name)
+            // Every separate process will be assigned with its own vis.js group
             var res = groups.add({
                 id: code,
                 content: name,
@@ -225,8 +269,13 @@ div.external-legend {
         var start = Date.now();
         for (var i=0; i<processes.length; i++) {
             var proc = processes[i];
-            var when = parseInt(proc[0]) * 1000;
             var code = parseInt(proc[1]);
+            if (!(code in included_procs)) {
+                // not in the max num of processes with highest memory, so
+                // this group will not exist in the vis.js graph
+                continue;
+            }
+            var when = parseInt(proc[0]) * 1000;
             var mem  = parseInt(proc[2]);
             items.push({x:new Date(when), y:mem, group: code});
             if (start > when) {
@@ -242,15 +291,15 @@ div.external-legend {
             end: Date.now()
         };
 
-        var graph2d = new vis.Graph2d(container, items, groups, options);
+        graph2d = new vis.Graph2d(container, items, groups, options);
 
-        populateExternalLegend(graph2d, groups);
+        populateExternalLegend();
     }
 
     /**
     * this function fills the external legend with content using the getLegend() function.
     */
-    function populateExternalLegend(graph2d, groups) {
+    function populateExternalLegend() {
         var groupsData = groups.get();
         var legendDiv = document.getElementById("Legend");
         legendDiv.innerHTML = "";
@@ -307,11 +356,11 @@ div.external-legend {
         // if visible, hide
         if (graph2d.isGroupVisible(groupId) == true) {
             groups.update({id:groupId, visible:false});
-            container.className = container.className + " hidden";
+            container.className = container.className + " switched_off";
         }
         else { // if invisible, show
             groups.update({id:groupId, visible:true});
-            container.className = container.className.replace("hidden","");
+            container.className = container.className.replace("switched_off","");
         }
     }
         

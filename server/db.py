@@ -119,7 +119,7 @@ class _DB(object):
         query = "SELECT utime, prcode, memory \
                  FROM procinfo WHERE utime >= ? AND utime <= ? \
                  ORDER BY utime DESC \
-                 LIMIT 5000"
+                 LIMIT 20000"
         cur.execute(query, period)
         rows = cur.fetchall()
         new_mappings = copy.deepcopy(self.new_mappings_for_web_client)
