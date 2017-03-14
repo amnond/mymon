@@ -1,21 +1,10 @@
 """ Process monitor: scans processes and sends status to database """
 import time
-import json
+import psutil # https://github.com/giampaolo/psutil
 
-from subprocess import Popen, PIPE
 
 from db import DB
 from reqhandler import RH
-
-def procname(proc):
-    end = proc.find(' -')
-    if end == -1:
-        end = len(proc)
-    proc = proc[0:end]
-    start = proc[0:end].rfind('/')
-    if start == -1:
-        start = 0
-    return proc[start+1:]
 
 class Procmon(object):
     """ Procmon encapsulates information collection of OS process """
@@ -28,7 +17,7 @@ class Procmon(object):
 
     def handle_memlog_req(self, packet):
         """ process the requset we regitered to handle """
-        print("=========" + json.dumps(packet))
+        #print("=========" + json.dumps(packet))
         start = packet['start']
         end = packet['end']
         mappings = 'get_mappings' in packet
@@ -36,27 +25,41 @@ class Procmon(object):
         reply = {"reply-to":"meminfo", "data":info}
         return reply
 
+    def collect_userprocs_info(self):
+        ''' Get diagnostics for all processes we can access without root permissions '''
+        procdata = {}
+        for proc in psutil.process_iter():
+            try:
+                pinfo = proc.as_dict(attrs=['pid', 'name'])
+            except psutil.NoSuchProcess:
+                pass
+            else:
+                pid = pinfo['pid']
+                name = pinfo['name']
+
+                try:
+                    prc = psutil.Process(pid)
+                    mem = prc.memory_info()
+                    #print("%s %d" % (name, mem))
+                    if not name in procdata:
+                        procdata[name] = {'rss':0}
+                    procdata[name]['rss'] += mem.rss
+                except psutil.AccessDenied:
+                    pass
+                    #print("AccessDenied for process %d (%s" % (pid, name))
+                except psutil.ZombieProcess:
+                    pass
+                    #print("Zombie process %d (%s" % (pid, name))
+        return procdata
+
     def monitor(self):
         """ scans OS processes and sends to database """
+        procdata = self.collect_userprocs_info()
         now = int(time.time())
-        cols = (5, 10)
-        command = 'ps aux'.split()
-
-        process = Popen(command, stdout=PIPE, stderr=PIPE)
-        stdout, stderr = process.communicate()
-
-        if stderr:
-            print(stderr)
-
-        out = stdout.splitlines()
-        total = len(out)
         proclist = []
-        for i in range(1, total):
-            sline = out[i].split()
-            mem = int(sline[cols[0]].decode('utf-8'))
-            proc = ' '.join([x.decode('utf-8') for x in sline[cols[1]:]])
-            proc = procname(proc)
-            pcode = DB.get_code(proc)
+        for name in procdata:
+            mem = procdata[name]['rss']
+            pcode = DB.get_code(name)
             proclist.append((now, pcode, mem))
         DB.add_proc_info(proclist)
 

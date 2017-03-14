@@ -24,11 +24,15 @@ import time
 
 from web import Web
 
+LOGPATH = os.path.realpath(__file__)
+OUTNAME = os.path.dirname(LOGPATH) + '/mymon_out.log'
+ERRNAME = os.path.dirname(LOGPATH) + '/mymon_err.log'
+
 class Daemon(object):
     """ Linux Daemon boilerplate. """
     def __init__(self, pid_file,
-                 stdout='/var/log/daemon_example_out.log',
-                 stderr='/var/log/daemon_example_err.log'):
+                 stdout=OUTNAME,
+                 stderr=ERRNAME):
         self.stdout = stdout
         self.stderr = stderr
         self.pid_file = pid_file
