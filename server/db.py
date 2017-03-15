@@ -15,6 +15,12 @@ class _DB(object):
         self.code2name = {}
         self.new_mappings_for_db = []
         self.new_mappings_for_web_client = {}
+
+        create_totalmem_table = "CREATE TABLE IF NOT EXISTS totalmem \
+                                  ( `utime`  INTEGER, \
+                                    `used` INTEGER, \
+                                    `free` INTEGER ) "
+
         create_procinfo_table = "CREATE TABLE IF NOT EXISTS procinfo \
                                   ( `utime`  INTEGER, \
                                     `prcode` INTEGER, \
@@ -22,6 +28,8 @@ class _DB(object):
 
         create_idx_time = "CREATE INDEX IF NOT EXISTS `idx_time` ON `procinfo` (`utime` ) "
         create_idx_mem = "CREATE INDEX IF NOT EXISTS `idx_mem` ON `procinfo` (`memory` ) "
+
+        create_idx_tmem = "CREATE INDEX IF NOT EXISTS `idx_mtime` ON `totalmem` (`utime` ) "
 
         create_prcode2name_table = "CREATE TABLE IF NOT EXISTS prcode2name \
                                       ( `prcode` INTEGER, \
@@ -39,6 +47,10 @@ class _DB(object):
             cur.execute(create_procinfo_table)
             cur.execute(create_idx_time)
             cur.execute(create_idx_mem)
+
+            cur.execute(create_totalmem_table)
+            cur.execute(create_idx_tmem)
+
             cur.execute(create_prcode2name_table)
 
             cur.execute(get_proc_codes)
@@ -92,6 +104,20 @@ class _DB(object):
             return self.next_proc_code
         return self.name2code[name]
 
+    def add_total_mem_info(self, utime, used, available):
+        """
+        Input: tuples of (time. used memory, available memory)
+        Adds new memory info to history
+        """
+        try:
+            cur = self.con.cursor()
+            cur.execute("begin")
+            cur.execute("INSERT INTO totalmem VALUES(?, ?, ?)", (utime, used, available))
+            cur.execute("commit")
+        except self.con.Error:
+            print("add_total_mem_info failed!")
+            cur.execute("rollback")
+
     def add_proc_info(self, procs_info):
         """
         Input: tuples of (time. process name, memory used)
@@ -109,6 +135,22 @@ class _DB(object):
             cur.execute("rollback")
         self.new_mappings_for_db = []
 
+    def get_mem_info(self, start_time, end_time):
+        """-----------------------------------------------
+        Input: time range for total memory info
+        Returns: tuples of time, used memory, free memory
+        """
+        period = (start_time, end_time)
+        cur = self.con.cursor()
+        query = "SELECT utime, used, free \
+                 FROM totalmem \
+                 WHERE utime >= ? AND utime <= ?"
+
+        cur.execute(query, period)
+        rows = cur.fetchall()
+        reply = {"totalmem":rows}
+        return reply
+
     def get_proc_info(self, start_time, end_time, mapping):
         """-----------------------------------------------
         Input: time range for process info
@@ -120,8 +162,8 @@ class _DB(object):
         query = "SELECT T1.utime, T1.prcode, T1.memory \
                  FROM procinfo AS T1,\
                     (SELECT prcode, avg(memory) AS avgm \
-                    from procinfo \
-                    where utime >= ? and utime <= ? \
+                    FROM procinfo \
+                    WHERE utime >= ? AND utime <= ? \
                     GROUP BY prcode \
                     ORDER BY avgm desc \
                     LIMIT 10) AS T2 \

@@ -2,7 +2,6 @@
 import time
 import psutil # https://github.com/giampaolo/psutil
 
-
 from db import DB
 from reqhandler import RH
 
@@ -10,10 +9,17 @@ class Procmon(object):
     """ Procmon encapsulates information collection of OS process """
     def __init__(self):
         RH.register_handler('memlog', self.handle_memlog_req)
+        RH.register_handler('currmem', self.handle_currmem_req)
 
     def free_mem(self):
         """ caclulate free memory """
         pass
+
+    def handle_currmem_req(self, packet):
+        """ process to requset memory snapshot """
+        totmem = psutil.virtual_memory()
+        reply = {"used":totmem.used, "available":totmem.available, "free":totmem.free,}
+        return reply
 
     def handle_memlog_req(self, packet):
         """ process the requset we regitered to handle """
@@ -21,8 +27,9 @@ class Procmon(object):
         start = packet['start']
         end = packet['end']
         mappings = 'get_mappings' in packet
-        info = DB.get_proc_info(start, end, mappings)
-        reply = {"reply-to":"meminfo", "data":info}
+        pinfo = DB.get_proc_info(start, end, mappings)
+        minfo = DB.get_mem_info(start, end)
+        reply = {"pinfo":pinfo, "minfo":minfo}
         return reply
 
     def collect_userprocs_info(self):
@@ -62,6 +69,8 @@ class Procmon(object):
             pcode = DB.get_code(name)
             proclist.append((now, pcode, mem))
         DB.add_proc_info(proclist)
+        totmem = psutil.virtual_memory()
+        DB.add_total_mem_info(now, totmem.used, totmem.available)
 
 if __name__ == "__main__":
     PRMON = Procmon()

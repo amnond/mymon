@@ -21,6 +21,12 @@ class _RequestHandler(object):
         if not request in self.request_handlers:
             print("Error: request " + request + " does not have a handler")
             return {"status":"error", "msg":"no handler for "+request}
-        return self.request_handlers[request](packet)
+        reply = self.request_handlers[request](packet)
+        reply['reply-to'] = request
+        if 'ctx' in packet:
+            # if context received with request, return it unchanged
+            reply['ctx'] = packet['ctx']
+        return reply
+
 
 RH = _RequestHandler()

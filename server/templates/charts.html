@@ -74,24 +74,39 @@ div.external-legend {
     margin-left: -5px;
     width: 100%;
 }
+
+.daterange td {
+    padding-right: 5px;
+}
 </style>
 
-
+<br />
+<div class="row" id="totalmem">
+</div>
+<br />
+<div class="row">
+    <table class="daterange">
+        <tr>
+            <td>
+                Enter date range 
+            </td>
+            <td>
+                <input type="text" style='width:190px;' id="idcalpick" class="form-control">
+            </td>
+            <td>
+                <a class='btn btn-default' onClick="sendDateRange()">Get Data</a>
+            </td>
+        </tr>
+    <table>
+</div>
+<br />
 <div class="row">
     <div class="col-lg-12">
-        <h1 class="page-header">charts</h1>
-
-        <br />
-        <input type="text" id="idcalpick" class="form-control" style='width:250px;'>
-
-        <br />
-        <a class='btn btn-default' onClick="sendDateRange()">Get Data</a>
-
         <div id="visjs">
         </div>
-
     </div>
 </div>
+
 
 <script>
     var mappings; 
@@ -125,7 +140,15 @@ div.external-legend {
         }, function(start, end, label) {
             // console.log(label)
         });
+
+        reqCurrNem()        
     });
+
+    function reqCurrNem()
+    {
+        var json = {request:'currmem'};
+        UI.postRequest(json, processCurrMem)        
+    }
 
     function sendDateRange()
     {
@@ -145,6 +168,17 @@ div.external-legend {
         UI.postRequest(json, processResult)
     }
 
+    function processCurrMem(data)
+    {
+        var reply = JSON.parse(data);
+        var mb = 1024 * 1024
+        var used = Math.floor(reply.used/mb) + "MB"
+        var avail = Math.floor(reply.available/mb) + "MB"
+        var free = Math.floor(reply.free/mb) + "MB"
+        var html = "Used:" + used + ", Available:" + avail + ", Free:" + free;
+        $("#totalmem").html(html);
+    }
+
     function processResult(data)
     {
         var visdisplay = '<div id="Legend" class="external-legend"></div>';
@@ -152,18 +186,18 @@ div.external-legend {
         document.getElementById('visjs').innerHTML = visdisplay;
 
         var reply = JSON.parse(data);
-        var data = reply.data
-        if ('mappings' in data) {
-            mappings = data.mappings;
+        var pinfo = reply.pinfo
+        if ('mappings' in pinfo) {
+            mappings = pinfo.mappings;
         }
-        if ('new_mappings' in data) {
-            for (code in data.new_mappings) {
-                mappings[code] = data.new_mappings[code];
+        if ('new_mappings' in pinfo) {
+            for (code in pinfo.new_mappings) {
+                mappings[code] = pinfo.new_mappings[code];
             }
         }
         //console.log(reply)
         UI.set_global(key_mappings, mappings);
-        displayResults(data.processes);
+        displayResults(pinfo.processes);
     }
 
     function sortConsumersDesc(processes)
@@ -192,6 +226,7 @@ div.external-legend {
         return result;
     }
 
+    //--------------------------------------------------------------------------
     // http://stackoverflow.com/questions/18638900/javascript-crc32
     // http://stackoverflow.com/users/1775178/alex
     var makeCRCTable = function(){
@@ -217,6 +252,7 @@ div.external-legend {
 
         return (crc ^ (-1)) >>> 0;
     };
+    //--------------------------------------------------------------------------
 
     function str2color(str) {
         var hexstr = crc32(str).toString(16).substr(0,6)
