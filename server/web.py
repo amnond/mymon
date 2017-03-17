@@ -5,6 +5,7 @@ The web service implemented via Tornado
 
 import os.path
 import json
+import zlib
 import tornado.httpserver
 import tornado.ioloop
 import tornado.web
@@ -16,7 +17,7 @@ from reqhandler import RH
 
 # http://guillaumevincent.com/2013/02/12/Basic-authentication-on-Tornado-with-a-decorator.html
 
-
+ 
 class BaseHandler(tornado.web.RequestHandler):
     """ Tornado Base """
     def get_current_user(self):
@@ -40,6 +41,7 @@ class PageHandler(BaseHandler):
 
 class AjaxHandler(BaseHandler):
     """ Tornado Ajax """
+    
     @tornado.web.authenticated
     def post(self):
         spacket = self.get_argument("packet")
@@ -49,7 +51,16 @@ class AjaxHandler(BaseHandler):
             return
 
         reply = RH.invoke(packet)
-        self.write(json.dumps(reply))
+        response = json.dumps(reply)
+        #self.write(response)
+
+        self.set_header("Content-type", 'text/plain')
+        self.set_header("Content-Encoding", 'gzip')
+        gzip_compress = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
+        content = gzip_compress.compress(response) + gzip_compress.flush()
+        compressed_content_length = len(content)
+        self.set_header("Content-Length", compressed_content_length)
+        self.write(content)
 
 class LoginHandler(BaseHandler):
     """ Tornado attempt to get page if authenticated """
@@ -109,6 +120,8 @@ class Application(tornado.web.Application):
             "xsrf_cookies": True
         }
 
+        settings['compress_response'] = True
+
         tornado.web.Application.__init__(self, [
             tornado.web.url(r"/(favicon\.ico)", tornado.web.StaticFileHandler),
             tornado.web.url(r"/", MainHandler, name="main"),
@@ -123,7 +136,7 @@ class Web(object):
     def __init__(self):
         self.port = 8888
         self.proc_timer = None
-        self.sinterval = 10000
+        self.sinterval = 1000
 
     def set_config(self, conf):
         """ Set various web server settings """

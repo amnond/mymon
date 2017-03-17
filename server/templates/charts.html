@@ -181,11 +181,14 @@ div.external-legend {
 
     function processResult(data)
     {
-        var visdisplay = '<div id="Legend" class="external-legend"></div>';
-        visdisplay += '<div id="memchart"></div>';
+        var visdisplay = '<div id="memchart"></div>';
+        visdisplay += '<div style="height:100px; overflow-y: auto; background-color:#cdcdcd"><center>';
+        visdisplay += '<div id="Legend" class="external-legend"></div>';
+        visdisplay += '</center></div>'
         document.getElementById('visjs').innerHTML = visdisplay;
 
         var reply = JSON.parse(data);
+        //console.log(data);
         var pinfo = reply.pinfo
         if ('mappings' in pinfo) {
             mappings = pinfo.mappings;
@@ -197,7 +200,7 @@ div.external-legend {
         }
         //console.log(reply)
         UI.set_global(key_mappings, mappings);
-        displayResults(pinfo.processes);
+        displayResults(pinfo.processes, pinfo.start_time, pinfo.memorder);
     }
 
     function sortConsumersDesc(processes)
@@ -269,7 +272,7 @@ div.external-legend {
         return res;
     }
 
-    function displayResults(processes)
+    function displayResults(processes, start_time, memorder)
     {
         groups = new vis.DataSet();
 
@@ -281,7 +284,7 @@ div.external-legend {
         for (var i=0; i<processes.length; i++) {
             var proc = processes[i];
             var code = parseInt(proc[1]);
-            var when = parseInt(proc[0]) * 1000;
+            var when = (start_time + parseInt(proc[0])) * 1000;
             var mem  = parseInt(proc[2]);
             items.push({x:new Date(when), y:mem, group: code});
             displayed_processes[code] = true;
@@ -307,42 +310,49 @@ div.external-legend {
                     */
                 }
             });
-            console.log("result for group.add("+code+") is " + res);
+            //console.log("result for group.add("+code+") is " + res);
         }
 
         var container = document.getElementById('memchart');
 
         var dataset = new vis.DataSet(items);
         var options = {
+            height: '290px',
+            dataAxis: {
+                left: {
+                    title:  {
+                        text: "Memory (MBytes)"
+                    },
+                    format: function (value) {
+                        return Math.floor(value / 1000000);
+                    }
+                }
+            },
             sampling: true,
             drawPoints: {enabled:false, size:3},
             interpolation: false,
-
-            dataAxis: {showMinorLabels: false},
             start: start,
             end: Date.now()
         };
 
         graph2d = new vis.Graph2d(container, items, groups, options);
 
-        populateExternalLegend();
+        populateExternalLegend(memorder);
     }
 
     /**
     * this function fills the external legend with content using the getLegend() function.
     */
-    function populateExternalLegend() {
+    function populateExternalLegend(memorder) {
         var groupsData = groups.get();
         var legendDiv = document.getElementById("Legend");
         legendDiv.innerHTML = "";
 
-        // get for all groups:
-        for (var i = 0; i < groupsData.length; i++) {
-
-            // get the legend for this group.
-            var legend = graph2d.getLegend(groupsData[i].id,30,30);
+        for (var i = 0; i < memorder.length; i++) {
+            var groupid = memorder[i];
+            var legend = graph2d.getLegend(groupid,30,30);
             if (typeof(legend.icon)=='undefined') {
-                console.log("Error: can't find icon for "+groupsData[i].id)
+                console.log("Error: can't find icon for "+groupid)
                 continue;
             }           
             // create divs
@@ -352,7 +362,7 @@ div.external-legend {
 
             // give divs classes and Ids where necessary
             containerDiv.className = 'legend-element-container';
-            containerDiv.id = groupsData[i].id + "_legendContainer"
+            containerDiv.id = groupid + "_legendContainer"
             iconDiv.className = "icon-container";
             descriptionDiv.className = "description-container";
 
@@ -374,7 +384,7 @@ div.external-legend {
             legendDiv.appendChild(containerDiv);
 
             // bind click event to this legend element.
-            containerDiv.onclick = toggleGraph.bind(this,groupsData[i].id);
+            containerDiv.onclick = toggleGraph.bind(this,groupid);
         }
     }
 

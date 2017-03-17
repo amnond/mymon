@@ -98,7 +98,7 @@
                             <a onClick="load('dashboard')"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
                         </li>
                         <li>
-                            <a onClick="load('charts')" ><i class="fa fa-bar-chart-o fa-fw"></i> Charts 
+                            <a onClick="load('charts')" ><i class="fa fa-bar-chart-o fa-fw"></i> Charts</a>
                         </li>
                         <li>
                             <a onClick="load('logs')"><i class="fa fa-table fa-fw"></i> Logs</a>
@@ -243,6 +243,7 @@
             $.post( url,
                     $('#reqform').serialize(),
                     callback,
+                    //"application/json" );
                     "text" );
         }
 

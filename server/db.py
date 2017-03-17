@@ -8,6 +8,8 @@ import sys
 import copy
 import sqlite3 as lite
 
+import time
+    
 class _DB(object):
     """ The DB object which serves as the interface to sqlite operaations """
     def __init__(self):
@@ -140,15 +142,15 @@ class _DB(object):
         Input: time range for total memory info
         Returns: tuples of time, used memory, free memory
         """
-        period = (start_time, end_time)
+        params = (start_time, start_time, end_time)
         cur = self.con.cursor()
-        query = "SELECT utime, used, free \
+        query = "SELECT utime-?, used, free \
                  FROM totalmem \
                  WHERE utime >= ? AND utime <= ?"
 
-        cur.execute(query, period)
+        cur.execute(query, params)
         rows = cur.fetchall()
-        reply = {"totalmem":rows}
+        reply = {"start_time":start_time, "totalmem":rows}
         return reply
 
     def get_proc_info(self, start_time, end_time, mapping):
@@ -156,27 +158,54 @@ class _DB(object):
         Input: time range for process info
         Returns: tuples of time, process name, memory used
         """
-        period = (start_time, end_time)
+        # timer_period = 15000
+        # samples = 30
+        # period_for_avg = (end_time-samples*(timer_period/1000), end_time)
+
+        period_for_avg = (end_time-int(end_time-start_time/10), end_time)
+
         cur = self.con.cursor()
 
-        query = "SELECT T1.utime, T1.prcode, T1.memory \
-                 FROM procinfo AS T1,\
-                    (SELECT prcode, avg(memory) AS avgm \
-                    FROM procinfo \
-                    WHERE utime >= ? AND utime <= ? \
-                    GROUP BY prcode \
-                    ORDER BY avgm desc \
-                    LIMIT 10) AS T2 \
-                 WHERE T1.prcode = T2.prcode"
+        t1 = time.time()
 
-        cur.execute(query, period)
+        # get ids of top 10 memory consumers in the given period
+        query = "SELECT prcode \
+                 FROM procinfo \
+                 WHERE utime >= ? AND utime <= ? \
+                 GROUP BY prcode \
+                 ORDER BY avg(memory) desc \
+                 LIMIT 10"
+        print("avg calc: %f" % (time.time()-t1) )
+
+        t1 = time.time()
+
+        cur.execute(query, period_for_avg)
+        rows_mem = cur.fetchall()
+        mem_order = [row[0] for row in rows_mem]
+        id_by_mem = ",".join([str(mem) for mem in mem_order])
+
+        params = (start_time, start_time, end_time)
+
+        query = "SELECT utime-?, prcode, memory \
+                 FROM procinfo \
+                 WHERE \
+                    utime >= ? AND utime <= ? AND \
+                    prcode in ("+id_by_mem+")"
+
+        cur.execute(query, params)
         rows = cur.fetchall()
         new_mappings = copy.deepcopy(self.new_mappings_for_web_client)
         self.new_mappings_for_web_client = {}
-        reply = {"processes":rows, "new_mappings":new_mappings}
+        reply = {"processes":rows,
+                 "start_time":start_time,
+                 "memorder":mem_order,
+                 "new_mappings":new_mappings}
         if mapping:
             reply["mappings"] = self.code2name
-        return reply
 
+        print(params)
+        print(id_by_mem)
+        print("%f %d" % (time.time()-t1, len(rows)))
+        return reply
 
 DB = _DB()

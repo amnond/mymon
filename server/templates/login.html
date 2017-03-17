@@ -12,6 +12,7 @@
     <title>Mymon login</title>
 
     <style>
+
     .fullscreen_bg {
         position: fixed;
         top: 0;
@@ -41,10 +42,11 @@
 
 <body>
 <div id="fullscreen_bg" class="fullscreen_bg"/>
-    <div class="container">
+    <div class="container" style="min-width:300px;">
         <div class="row">
-            <div class="col-md-4 col-md-offset-4">
-                <div class="login-panel panel panel-default">
+            <div class="col-md-4 col-md-offset-4 loginbox">
+                <center>
+                <div class="login-panel panel panel-default" style="max-width:300px;">
                     <div class="panel-heading">
                         <h3 class="panel-title">Please Sign In</h3>
                     </div>
@@ -66,12 +68,10 @@
                         </form>
                     </div>
                 </div>
+                </center>
             </div>
         </div>
     </div>
-
-    <!-- Bootstrap Core JavaScript -->
-    <script src="/res/js/bootstrap.min.js"></script>
 
 </div>
 </body>
