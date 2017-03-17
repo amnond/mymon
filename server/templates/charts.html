@@ -88,7 +88,7 @@ div.external-legend {
     <table class="daterange">
         <tr>
             <td>
-                Enter date range 
+                Period:  
             </td>
             <td>
                 <input type="text" style='width:190px;' id="idcalpick" class="form-control">
@@ -175,7 +175,7 @@ div.external-legend {
         var used = Math.floor(reply.used/mb) + "MB"
         var avail = Math.floor(reply.available/mb) + "MB"
         var free = Math.floor(reply.free/mb) + "MB"
-        var html = "Used:" + used + ", Available:" + avail + ", Free:" + free;
+        var html = "Used:<b>" + used + "</b>, Available:<b>" + avail + "</b>, Free:<b>" + free + "</b>";
         $("#totalmem").html(html);
     }
 

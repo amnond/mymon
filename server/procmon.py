@@ -10,6 +10,11 @@ class Procmon(object):
     def __init__(self):
         RH.register_handler('memlog', self.handle_memlog_req)
         RH.register_handler('currmem', self.handle_currmem_req)
+        RH.register_dashboard('mem', self.dashboard)
+
+    def dashboard(self):
+        """ UI for mympn dashboard """
+        return "<br />Look at me, I'm UI for dashboard, har har<br />"
 
     def free_mem(self):
         """ caclulate free memory """

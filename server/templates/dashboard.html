@@ -1,2 +1,21 @@
-<br />
-heloooo, dashboard here
+<div id="dashboard">
+</div>
+
+<script>
+$(document).ready(function() {
+    var json = {request:'__dashboard__'};
+    UI.postRequest(json, processDashboardInfo)        
+});
+
+function processDashboardInfo(data)
+{
+    console.log(data)
+    var reply = JSON.parse(data);
+    if (!('html' in reply)) {
+        console.log("No html field found in reply");
+        return;
+    }
+
+    $('#dashboard').html(reply.html);
+}
+</script>
