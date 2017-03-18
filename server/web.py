@@ -4,6 +4,7 @@ The web service implemented via Tornado
 #-*- coding:utf-8 -*-
 
 import os.path
+import time
 import json
 import zlib
 import tornado.httpserver
@@ -56,8 +57,11 @@ class AjaxHandler(BaseHandler):
 
         self.set_header("Content-type", 'text/plain')
         self.set_header("Content-Encoding", 'gzip')
+        t_1 = time.time()
         gzip_compress = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
         content = gzip_compress.compress(response) + gzip_compress.flush()
+        print("compression time:%f" % (time.time()-t_1))
+
         compressed_content_length = len(content)
         self.set_header("Content-Length", compressed_content_length)
         self.write(content)

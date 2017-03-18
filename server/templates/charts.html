@@ -82,6 +82,7 @@ div.external-legend {
 
 <br />
 <div class="row" id="totalmem">
+Getting memory...
 </div>
 <br />
 <div class="row">
@@ -104,6 +105,7 @@ div.external-legend {
     <div class="col-lg-12">
         <div id="visjs">
         </div>
+        <br />
     </div>
 </div>
 
@@ -111,8 +113,10 @@ div.external-legend {
 <script>
     var mappings; 
     var key_mappings = 'charts:mappings';
-    var graph2d;
-    var groups;
+    var graph2d_procsmem;
+    var graph2d_totalmem;
+    var procs_groups;
+    var tlmem_groups;
 
     $(document).ready(function() {
         /*
@@ -147,7 +151,7 @@ div.external-legend {
     function reqCurrNem()
     {
         var json = {request:'currmem'};
-        UI.postRequest(json, processCurrMem)        
+        UI.postRequestSilent(json, processCurrMem)        
     }
 
     function sendDateRange()
@@ -162,8 +166,10 @@ div.external-legend {
         }
 
         document.getElementById('visjs').innerHTML = '';
-        graph2d = null;
-        groups = null;
+        graph2d_procsmem = null;
+        graph2d_totalmem = null;
+        procs_groups = null;
+        tlmem_groups = null;
 
         UI.postRequest(json, processResult)
     }
@@ -181,14 +187,22 @@ div.external-legend {
 
     function processResult(data)
     {
-        var visdisplay = '<div id="memchart"></div>';
+        // Total memory graph container
+        var visdisplay = '<h5>System Memory</h5><div id="total_memchart"></div>';
+        visdisplay += '<br /><h5>Processes Memory</h5>';
+        // Processes graph container        
+        visdisplay += '<div id="procs_memchart"></div>';
+        // Processes graph external legend container
         visdisplay += '<div style="height:100px; overflow-y: auto; background-color:#cdcdcd"><center>';
+        // Processes graph external legend
         visdisplay += '<div id="Legend" class="external-legend"></div>';
         visdisplay += '</center></div>'
+
         document.getElementById('visjs').innerHTML = visdisplay;
 
         var reply = JSON.parse(data);
-        //console.log(data);
+        console.log(reply);
+
         var pinfo = reply.pinfo
         if ('mappings' in pinfo) {
             mappings = pinfo.mappings;
@@ -198,35 +212,11 @@ div.external-legend {
                 mappings[code] = pinfo.new_mappings[code];
             }
         }
-        //console.log(reply)
-        UI.set_global(key_mappings, mappings);
-        displayResults(pinfo.processes, pinfo.start_time, pinfo.memorder);
-    }
+        var minfo = reply.minfo;
+        displayTotalMem(minfo.totalmem, minfo.start_time);
 
-    function sortConsumersDesc(processes)
-    {
-        // returns processes sorted descendingly by average memory consumption
-        // within the time frame they were monitored
-        var mem_averages = {};
-        for (var i=0; i<processes.length; i++) {
-            var proc = processes[i];
-            var code = parseInt(proc[1]);
-            var mem  = parseInt(proc[2]);
-            if (!(code in mem_averages)) {
-                mem_averages[code] = {sum:0, count:0};                   
-            }
-            var prev_code_info = mem_averages[code];
-            prev_code_info.sum += mem;
-            prev_code_info.count++;
-        }
-        var result = [];
-        for (code in mem_averages) {
-            var code_info = mem_averages[code];
-            var avg = code_info.sum / code_info.count;
-            result.push({code:code, avg:avg});
-        }
-        result.sort(function(a, b) {return a.avg < b.avg});
-        return result;
+        UI.set_global(key_mappings, mappings);
+        displayProcsMem(pinfo.processes, pinfo.start_time, pinfo.memorder);
     }
 
     //--------------------------------------------------------------------------
@@ -272,12 +262,72 @@ div.external-legend {
         return res;
     }
 
-    function displayResults(processes, start_time, memorder)
+    function displayTotalMem(memhist, start_time)
     {
-        groups = new vis.DataSet();
-
+        memtl_groups = new vis.DataSet();
         var items = [];
+        var start = Date.now();
 
+        var memgroups = [
+            { 'name':'Used', 'col':'red' },
+            { 'name':'Available', 'col':'green' },
+            { 'name':'Free', 'col':'blue' },
+        ];
+
+        for (var i=0; i<memhist.length; i++) {
+            var meminfo = memhist[i];
+            var when = (start_time + parseInt(meminfo[0])) * 1000;
+            var used  = meminfo[1];
+            var avail = meminfo[2];
+            var free  = meminfo[3];
+            items.push({x:new Date(when), y:used, group: memgroups[0].name});
+            items.push({x:new Date(when), y:avail, group: memgroups[1].name});
+            items.push({x:new Date(when), y:free, group: memgroups[2].name});
+            if (start > when) {
+                start = when;
+            }
+        }
+
+        for (var i=0; i<memgroups; i++) {
+            var memgroup = memgroups[i];
+            var col = memgroup.col;
+            var res = tlmem_groups.add({
+                id: memgroup.name,
+                content: memgroup.name,
+                style:  "fill: #ffffff; fill-opacity:0; stroke-width:2px; stroke: " + col + ";"
+            });
+        }
+
+        var dataset = new vis.DataSet(items);
+        var options = {
+            defaultGroup: '',
+            legend: true,
+            height: '290px',
+            dataAxis: {
+                left: {
+                    title:  {
+                        text: "Memory (MBytes)"
+                    },
+                    format: function (value) {
+                        return Math.floor(value / 1000000);
+                    }
+                }
+            },
+            sampling: true,
+            drawPoints: {enabled:false, size:3},
+            interpolation: false,
+            start: start,
+            end: Date.now()
+        };
+
+        var tlmem_container = document.getElementById('total_memchart');
+        graph2d_totalmem = new vis.Graph2d(tlmem_container, items, procs_groups, options);
+    }
+
+    function displayProcsMem(processes, start_time, memorder)
+    {
+        procs_groups = new vis.DataSet();
+        var items = [];
         var displayed_processes = {};
 
         var start = Date.now();
@@ -297,7 +347,7 @@ div.external-legend {
             var name = mappings[code];
             var col = str2color(name)
             // Every separate process will be assigned with its own vis.js group
-            var res = groups.add({
+            var res = procs_groups.add({
                 id: code,
                 content: name,
                 style:  "fill: #ffffff; fill-opacity:0; stroke-width:2px; stroke: " + col + ";",
@@ -313,7 +363,7 @@ div.external-legend {
             //console.log("result for group.add("+code+") is " + res);
         }
 
-        var container = document.getElementById('memchart');
+        var procs_container = document.getElementById('procs_memchart');
 
         var dataset = new vis.DataSet(items);
         var options = {
@@ -335,7 +385,7 @@ div.external-legend {
             end: Date.now()
         };
 
-        graph2d = new vis.Graph2d(container, items, groups, options);
+        graph2d_procsmem = new vis.Graph2d(procs_container, items, procs_groups, options);
 
         populateExternalLegend(memorder);
     }
@@ -344,13 +394,13 @@ div.external-legend {
     * this function fills the external legend with content using the getLegend() function.
     */
     function populateExternalLegend(memorder) {
-        var groupsData = groups.get();
+        var groupsData = procs_groups.get();
         var legendDiv = document.getElementById("Legend");
         legendDiv.innerHTML = "";
 
         for (var i = 0; i < memorder.length; i++) {
             var groupid = memorder[i];
-            var legend = graph2d.getLegend(groupid,30,30);
+            var legend = graph2d_procsmem.getLegend(groupid,30,30);
             if (typeof(legend.icon)=='undefined') {
                 console.log("Error: can't find icon for "+groupid)
                 continue;
@@ -366,7 +416,7 @@ div.external-legend {
             iconDiv.className = "icon-container";
             descriptionDiv.className = "description-container";
 
-            // append class to icon. All styling classes from the vis.css/vis-timeline-graph2d.min.css have been copied over into the head here to be able to style the
+            // append class to icon. All styling classes from the vis.css/vis-timeline-graph2d_procsmem.min.css have been copied over into the head here to be able to style the
             // icons with the same classes if they are using the default ones.
             legend.icon.setAttributeNS(null, "class", "legend-icon");
 
@@ -396,12 +446,12 @@ div.external-legend {
         // get the container that was clicked on.
         var container = document.getElementById(groupId + "_legendContainer")
         // if visible, hide
-        if (graph2d.isGroupVisible(groupId) == true) {
-            groups.update({id:groupId, visible:false});
+        if (graph2d_procsmem.isGroupVisible(groupId) == true) {
+            procs_groups.update({id:groupId, visible:false});
             container.className = container.className + " switched_off";
         }
         else { // if invisible, show
-            groups.update({id:groupId, visible:true});
+            procs_groups.update({id:groupId, visible:true});
             container.className = container.className.replace("switched_off","");
         }
     }

@@ -21,6 +21,7 @@ class _DB(object):
         create_totalmem_table = "CREATE TABLE IF NOT EXISTS totalmem \
                                   ( `utime`  INTEGER, \
                                     `used` INTEGER, \
+                                    `avail` INTEGER, \
                                     `free` INTEGER ) "
 
         create_procinfo_table = "CREATE TABLE IF NOT EXISTS procinfo \
@@ -106,7 +107,7 @@ class _DB(object):
             return self.next_proc_code
         return self.name2code[name]
 
-    def add_total_mem_info(self, utime, used, available):
+    def add_total_mem_info(self, utime, used, avail, free):
         """
         Input: tuples of (time. used memory, available memory)
         Adds new memory info to history
@@ -114,7 +115,7 @@ class _DB(object):
         try:
             cur = self.con.cursor()
             cur.execute("begin")
-            cur.execute("INSERT INTO totalmem VALUES(?, ?, ?)", (utime, used, available))
+            cur.execute("INSERT INTO totalmem VALUES(?, ?, ?, ?)", (utime, used, avail, free))
             cur.execute("commit")
         except self.con.Error:
             print("add_total_mem_info failed!")
@@ -142,15 +143,18 @@ class _DB(object):
         Input: time range for total memory info
         Returns: tuples of time, used memory, free memory
         """
+
+        t_1 = time.time()
         params = (start_time, start_time, end_time)
         cur = self.con.cursor()
-        query = "SELECT utime-?, used, free \
+        query = "SELECT utime-?, used, avail, free \
                  FROM totalmem \
                  WHERE utime >= ? AND utime <= ?"
 
         cur.execute(query, params)
         rows = cur.fetchall()
         reply = {"start_time":start_time, "totalmem":rows}
+        print("mem_query => rows: %d, qtime:%f" % (len(rows), time.time()-t_1))
         return reply
 
     def get_proc_info(self, start_time, end_time, mapping):
@@ -166,7 +170,7 @@ class _DB(object):
 
         cur = self.con.cursor()
 
-        t1 = time.time()
+        t_1 = time.time()
 
         # get ids of top 10 memory consumers in the given period
         query = "SELECT prcode \
@@ -175,9 +179,9 @@ class _DB(object):
                  GROUP BY prcode \
                  ORDER BY avg(memory) desc \
                  LIMIT 10"
-        print("avg calc: %f" % (time.time()-t1) )
+        print("avg calc: %f" % (time.time()-t_1) )
 
-        t1 = time.time()
+        t_1 = time.time()
 
         cur.execute(query, period_for_avg)
         rows_mem = cur.fetchall()
@@ -203,9 +207,7 @@ class _DB(object):
         if mapping:
             reply["mappings"] = self.code2name
 
-        print(params)
-        print(id_by_mem)
-        print("%f %d" % (time.time()-t1, len(rows)))
+        print("proc_query => rows: %d, qtime:%f" % (len(rows), time.time()-t_1))
         return reply
 
 DB = _DB()

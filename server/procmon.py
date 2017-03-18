@@ -75,7 +75,7 @@ class Procmon(object):
             proclist.append((now, pcode, mem))
         DB.add_proc_info(proclist)
         totmem = psutil.virtual_memory()
-        DB.add_total_mem_info(now, totmem.used, totmem.available)
+        DB.add_total_mem_info(now, totmem.used, totmem.available, totmem.free)
 
 if __name__ == "__main__":
     PRMON = Procmon()
