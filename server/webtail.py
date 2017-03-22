@@ -9,7 +9,10 @@ class WebTail(object):
     def __init__(self):
         self.filenames = ['/Users/amnondavid/projects/mymon/server/test.txt']
         self.tailed_files = []
-        RH.register_websock_handlers('webtail', self.new_client, self.new_message)
+        RH.register_websock_handlers('webtail',
+                                     self.new_client,
+                                     self.new_message,
+                                     self.close_client)
 
     def new_client(self, client):
         """ invoked whenever a new client joins the service webtail"""
@@ -20,3 +23,7 @@ class WebTail(object):
         """ invoked whenever a client sends a new message to service webtail"""
         L.info("received new message:"+message)
         client.write_message("hello from server")
+
+    def close_client(self, client):
+        """ invoked whenever a new client joins the service webtail"""
+        L.info("webtail - client closed")

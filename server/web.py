@@ -171,7 +171,6 @@ class Application(tornado.web.Application):
 
     def on_open_websock(self, client):
         """ new websoock has connected """
-        client.handler_connected = False
         self.listeners.append(client)
         L.info("websock connected")
 
@@ -181,6 +180,8 @@ class Application(tornado.web.Application):
         if len(self.listeners) == 0:
             pass
         L.info("websock closed")
+        if hasattr(client, "service"):
+            RH.websock_close_connection(client)
 
     def on_msg_websock(self, client, message):
         """ new message from existing websock """

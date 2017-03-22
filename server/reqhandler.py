@@ -33,28 +33,6 @@ class _RequestHandler(object):
         self.ajax_handlers[request] = function
         return True
 
-    def register_websock_handlers(self, service, new_client, new_message):
-        """ component registers its websocket requests handlers via this method
-            The new_client method should return False if there is a problem
-            servicing a new client, otherwise True """
-        if service in self.websock_handlers:
-            L.error("Error: service:" + service + " is already registered")
-            return False
-        self.websock_handlers[service] = {"new_client":new_client, "new_message":new_message}
-        return True
-
-    def websock_new_connection(self, client, service):
-        """ Notify handler of new client """
-        if not service in self.websock_handlers:
-            return False
-        return self.websock_handlers[service]['new_client'](client)
-
-    def websock_message(self, client, message):
-        """ invoke the appropriate method of the designated websock request handler """
-        service = client.service
-        self.websock_handlers[service]['new_message'](client, message)
-        return
-
     def ajax_request(self, packet):
         """ invoke the appropriate method of the designated request handler """
         request = packet["request"]
@@ -67,6 +45,42 @@ class _RequestHandler(object):
             # if context received with request, return it unchanged
             reply['ctx'] = packet['ctx']
         return reply
+
+    def register_websock_handlers(self, service, new_client, new_message, close_client):
+        """ component registers its websocket requests handlers via this method
+            The new_client method should return False if there is a problem
+            servicing a new client, otherwise True """
+        if service in self.websock_handlers:
+            L.error("Error: service:" + service + " is already registered")
+            return False
+        handlers = {
+            "new_client":new_client,
+            "new_message":new_message,
+            "close_client":close_client
+        }
+        self.websock_handlers[service] = handlers
+        return True
+
+    def websock_new_connection(self, client, service):
+        """ Notify handler of new client """
+        if not service in self.websock_handlers:
+            L.error("Error: service:" + service + " not found for new connection")
+            return False
+        return self.websock_handlers[service]['new_client'](client)
+
+    def websock_message(self, client, message):
+        """ invoke the appropriate method of the designated websock request handler """
+        service = client.service
+        self.websock_handlers[service]['new_message'](client, message)
+        return
+
+    def websock_close_connection(self, client):
+        """ Notify handler of client closing a connection """
+        service = client.service
+        if not service in self.websock_handlers:
+            L.error("Error: service:" + service + " not found for close connection")
+            return
+        self.websock_handlers[service]['close_client'](client)
 
 
 RH = _RequestHandler()
