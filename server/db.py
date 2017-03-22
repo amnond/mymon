@@ -9,7 +9,9 @@ import copy
 import sqlite3 as lite
 
 import time
-    
+
+from logger import L
+
 class _DB(object):
     """ The DB object which serves as the interface to sqlite operaations """
     def __init__(self):
@@ -43,7 +45,7 @@ class _DB(object):
         try:
             dbpath = os.path.realpath(__file__)
             dbname = os.path.dirname(dbpath) + '/mon.db'
-            print(dbname)
+            L.info(dbname)
             self.con = lite.connect(dbname)
             self.con.isolation_level = None
             cur = self.con.cursor()
@@ -68,19 +70,22 @@ class _DB(object):
                 if code in self.code2name:
                     errmsg = "Table integrity error: "
                     errmsg += "code2name[%d] already is mapped to %s, cant assign %s"
-                    print(errmsg % (code, self.code2name[code], name))
+                    err = errmsg % (code, self.code2name[code], name)
+                    L.error(err)
                 else:
                     self.code2name[code] = name
 
                 if name in self.name2code:
                     errmsg = "Table integrity error: "
                     errmsg += "name2code['%s'] already is mapped to %d, cant assign %d"
-                    print(errmsg % (name, self.name2code[name], code))
+                    err = errmsg % (name, self.name2code[name], code)
+                    L.error(err)
                 else:
                     self.name2code[name] = code
 
         except lite.Error, err:
-            print "Error %s:" % err.args[0]
+            err = "Error %s:" % err.args[0]
+            L.error(err)
             sys.exit(1)
 
     def close(self):
@@ -91,7 +96,8 @@ class _DB(object):
     def get_name(self, code):
         """Given a process unique code, return it's name"""
         if not code in self.code2name:
-            print("Error: no name for code %d:" % (code))
+            err = "Error: no name for code %d:" % (code)
+            L.error(err)
             return ""
         return self.code2name[code]
 
@@ -118,7 +124,7 @@ class _DB(object):
             cur.execute("INSERT INTO totalmem VALUES(?, ?, ?, ?)", (utime, used, avail, free))
             cur.execute("commit")
         except self.con.Error:
-            print("add_total_mem_info failed!")
+            L.error("add_total_mem_info failed!")
             cur.execute("rollback")
 
     def add_proc_info(self, procs_info):
@@ -134,7 +140,7 @@ class _DB(object):
             cur.executemany("INSERT INTO procinfo VALUES(?, ?, ?)", procs_info)
             cur.execute("commit")
         except self.con.Error:
-            print("add_proc_info failed!")
+            L.error("add_proc_info failed!")
             cur.execute("rollback")
         self.new_mappings_for_db = []
 
@@ -154,7 +160,8 @@ class _DB(object):
         cur.execute(query, params)
         rows = cur.fetchall()
         reply = {"start_time":start_time, "totalmem":rows}
-        print("mem_query => rows: %d, qtime:%f" % (len(rows), time.time()-t_1))
+        dbg = "mem_query => rows: %d, qtime:%f" % (len(rows), time.time()-t_1)
+        L.debug(dbg)
         return reply
 
     def get_proc_info(self, start_time, end_time, mapping):
@@ -179,7 +186,8 @@ class _DB(object):
                  GROUP BY prcode \
                  ORDER BY avg(memory) desc \
                  LIMIT 10"
-        print("avg calc: %f" % (time.time()-t_1) )
+        dbg = "avg calc: %f" % (time.time()-t_1)
+        L.debug(dbg)
 
         t_1 = time.time()
 
@@ -207,7 +215,8 @@ class _DB(object):
         if mapping:
             reply["mappings"] = self.code2name
 
-        print("proc_query => rows: %d, qtime:%f" % (len(rows), time.time()-t_1))
+        dbg = "proc_query => rows: %d, qtime:%f" % (len(rows), time.time()-t_1)
+        L.debug(dbg)
         return reply
 
 DB = _DB()

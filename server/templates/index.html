@@ -94,6 +94,8 @@
             <div class="navbar-default sidebar frame" role="navigation">
                 <div class="sidebar-nav navbar-collapse">
                     <ul class="nav" id="side-menu">
+                        <!-- TODO: This should be rendered via tornado templating according to
+                                   available plugins -->
                         <li>
                             <a onClick="load('dashboard')"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
                         </li>
@@ -101,7 +103,7 @@
                             <a onClick="load('charts')" ><i class="fa fa-bar-chart-o fa-fw"></i> Memory</a>
                         </li>
                         <li>
-                            <a onClick="load('logs')"><i class="fa fa-table fa-fw"></i> Logs</a>
+                            <a onClick="load('webtail')"><i class="fa fa-table fa-fw"></i> Logs</a>
                         </li>
                     </ul>
                 </div>
@@ -232,6 +234,76 @@
             },
             hide_wait_modal: function() {
                 hide_wait();
+            },
+            request_connection: function(service, conn) {
+                var inservice = false;
+
+                if (typeof(conn) != "object") {
+                    console.log("Error: connection parameter has to be an object")
+                    return;
+                }
+
+                conn.send = function(data) {
+                    console.log('attempting to send on invalid connection');
+                }
+
+                if ("MozWebSocket" in window) {
+                    WebSocket = MozWebSocket;
+                }
+
+                if (WebSocket) {
+                    var req = {service:service}
+                    var sreq = JSON.stringify(req);
+                    var ws = new WebSocket("ws://{{ host }}/websock/");
+                    ws.onopen = function () { ws.send(sreq) };
+                    ws.onmessage = function(evt) {
+                        console.log(evt);
+                        var data = evt.data;
+                        if (!inservice) {
+                            var stat = 'error'
+                            var response = {};
+                            try {
+                                response = JSON.parse(data);
+                                stat = response.status;
+                                if (response.service == service && stat == 'ok') {
+                                    inservice = true;
+                                    conn.send = function(data) {
+                                        // connect the send method directly to the websocket send
+                                        ws.send(data); 
+                                    }
+                                }
+                            }
+                            catch (e) {
+                                console.log(e);
+                            }
+                            if (!('onConnectAck' in conn)) {
+                                console.log('Error: connection has no onConnectAck method');
+                                return;
+                            }
+                            
+                            conn.onConnectAck(stat)
+                            return;
+                        }
+                        if (!('onData' in conn)) {
+                            console.log('Error: connection has no onData method');
+                            return;
+                        }
+                        conn.onData(data);
+                    }
+                    ws.onclose = function () { 
+                        if (inservice) {
+                            if (!('onClose' in conn)) {
+                                console.log('Error: connection has no onClose method');
+                                return;
+                            }
+                            conn.onClose();
+                        }
+                        console.log("websock closed")
+                    };
+                }
+                else {
+                    console.log("WebSocket not supported");
+                }
             }
         }
 
@@ -248,11 +320,11 @@
         }
 
         function load(page) {
-            $( '#pageview' ).hide();
-            $( '#loading' ).show()
-            $( "#pageview" ).load( "/"+page+".html", function() {
-                $( '#loading' ).hide()
-                $( '#pageview' ).show();
+            $( '#pageview' ).hide();   // hide current page view
+            $( '#loading' ).show()     // show animation until new page is received
+            $( "#pageview" ).load( "/"+page+".html", function() {  // request relevant page
+                $( '#loading' ).hide()   // when received, hide wait animation
+                $( '#pageview' ).show(); // and show newly arrive page
             });            
         }
 

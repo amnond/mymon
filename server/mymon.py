@@ -28,6 +28,10 @@ LOGPATH = os.path.realpath(__file__)
 OUTNAME = os.path.dirname(LOGPATH) + '/mymon_out.log'
 ERRNAME = os.path.dirname(LOGPATH) + '/mymon_err.log'
 
+def output(str):
+    ''' temporary replacement for daemon output '''
+    print(str)
+
 class Daemon(object):
     """ Linux Daemon boilerplate. """
     def __init__(self, pid_file,
@@ -100,9 +104,9 @@ class Daemon(object):
 
     def start(self):
         """ Start the daemon. """
-        print "Starting..."
+        output("Starting...")
         if self.get_pid_by_file():
-            print 'PID file {0} exists. Is the deamon already running?'.format(self.pid_file)
+            output('PID file {0} exists. Is the deamon already running?'.format(self.pid_file))
             sys.exit(1)
 
         self.daemonize()
@@ -110,10 +114,10 @@ class Daemon(object):
 
     def stop(self):
         """ Stop the daemon. """
-        print "Stopping..."
+        output("Stopping...")
         pid = self.get_pid_by_file()
         if not pid:
-            print "PID file {0} doesn't exist. Is the daemon not running?".format(self.pid_file)
+            output("PID file {0} doesn't exist. Is the daemon not running?".format(self.pid_file))
             return
 
         # Time to kill.
@@ -125,7 +129,7 @@ class Daemon(object):
             if 'No such process' in err.strerror and os.path.exists(self.pid_file):
                 os.remove(self.pid_file)
             else:
-                print err
+                output(err)
                 sys.exit(1)
 
     def restart(self):
@@ -143,7 +147,7 @@ class Daemon(object):
 def main():
     """ Handle daemon requests """
     if len(sys.argv) < 2:
-        print "Usage: {0} start|stop|restart".format(sys.argv[0])
+        output("Usage: {0} start|stop|restart".format(sys.argv[0]))
         sys.exit(2)
 
     daemon = Daemon('/tmp/daemon_example.pid')
@@ -154,7 +158,7 @@ def main():
     elif sys.argv[1] == 'restart':
         daemon.restart()
     else:
-        print "Unknown command '{0}'".format(sys.argv[1])
+        output("Unknown command '{0}'".format(sys.argv[1]))
         sys.exit(2)
 
 if __name__ == '__main__':
