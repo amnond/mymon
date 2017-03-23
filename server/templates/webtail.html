@@ -3,19 +3,28 @@
 #logstream {
     overflow-x:hidden;
     overflow-y:visible;
-    height:92%;
-    background-color: beige;
+    background-color: #ddddff;
+    border: 1px solid black;
     font-family:"Helvetica Narrow","Arial Narrow",Courier;
 }
 </style>
 <input type="button" class="btn" id='idState' onclick="togglePause()" value="Pause">
 <input type="button" class="btn" onclick="clearLog()" value="Clear">
 <input type="button" class="btn" onclick="showSettingsModal()" value="Settings...">
-
-<br>
+<br />
+<br />
 <div id="logstream"></div>
 
 <script>
+$(document).ready(function() {
+    // console.log($('#page-wrapper').height())
+    // console.log($('#logstream').offset().top)
+    var logw = $('#logstream');
+    var logheight = $('#page-wrapper').height() - logw.offset().top;
+    logw.height(logheight);
+    //logw.css("height", logheight+"px");
+});
+
 g_autoScroll = 1;
 g_scrollState = ['Follow','Pause'];
 function togglePause()
@@ -45,8 +54,8 @@ function write_line(str)
 
 function showSettingsModal()
 {
-
 }
+
 var single = "wsock_exists";
 
 var conn = {
@@ -62,7 +71,7 @@ var conn = {
         write_line(data);
     },
     onClose : function() {
-        debugger;
+        //debugger;
         UI.del_global(single);
         console.log("received onClose");
     }

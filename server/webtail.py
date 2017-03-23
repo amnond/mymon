@@ -19,6 +19,9 @@ from watchdog.events import FileSystemEventHandler
 class WebTail(FileSystemEventHandler):
     """ WebTail handles log files to monitor """
     def __init__(self):
+        self.path_filter = {
+            "/Users/amnondavid/projects/mymon/hello.txt" : 1
+        }
         self.tailed_files = {}
         self.listeners = {}
         RH.register_websock_handlers('webtail',
@@ -50,6 +53,8 @@ class WebTail(FileSystemEventHandler):
 
     def follow_file(self, fullpath):
         """ get latest changes in a file and send to client """
+        if fullpath not in self.path_filter:
+            return
         filep = self.get_fp(fullpath)
         where = filep.tell()
         line = filep.readline()
@@ -57,22 +62,31 @@ class WebTail(FileSystemEventHandler):
             filep.seek(where)
         else:
             self.lock.acquire()
-            info = {
-                "stime" : time.strftime("%Y-%m-%d %H:%M"),
-                "path" : fullpath,
-            }
-            while line:
-                info['line'] = line
-                for websock in self.listeners:
-                    out = json.dumps(info)
-                    websock.write_message(out)
-                line = filep.readline()
+            try:
+                info = {
+                    "stime" : time.strftime("%Y-%m-%d %H:%M"),
+                    "path" : fullpath,
+                }
+                while line:
+                    info['line'] = line
+                    for websock in self.listeners:
+                        try:
+                            out = json.dumps(info)
+                        except:
+                            L.error("for json.dumps, line="+line)
+                            break
+                        websock.write_message(out)
+                    line = filep.readline()
+            except Exception:
+                L.error("Exception while reading lines from:" + fullpath)
             self.lock.release()
         where = filep.tell()
         filep.seek(where)
 
     def unfollow_file(self, fullpath):
         """ remove file from list of tracked files """
+        if fullpath not in self.path_filter:
+            return
         if fullpath not in self.tailed_files:
             L.error("can't unfollow " + fullpath + " as it is not followed.")
             return

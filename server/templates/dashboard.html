@@ -32,12 +32,12 @@ $(document).unload(function() {
 
 $(document).ready(function() {
     var json = {request:'__dashboard__'};
-    UI.postRequest(json, processDashboardInfo)        
+    UI.postRequest(json, processDashboardInfo)
 });
 
 function processDashboardInfo(data)
 {
-    console.log(data)
+    //console.log(data)
     var reply = JSON.parse(data);
     if (!('html' in reply)) {
         console.log("No html field found in reply");
