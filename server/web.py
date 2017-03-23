@@ -24,7 +24,7 @@ from logger import L
 
 # http://guillaumevincent.com/2013/02/12/Basic-authentication-on-Tornado-with-a-decorator.html
 
- 
+
 class BaseHandler(tornado.web.RequestHandler):
     """ Tornado Base """
     def get_current_user(self):
@@ -235,12 +235,12 @@ class Web(object):
         """ The Tornado event loop """
         #------------------------------------------------
         # TODO: Should be activated from plugin directory
-        WebTail()
+        webtail = WebTail()
         procmon = Procmon()
         #------------------------------------------------
 
         #------------------------------------------------
-        # TODO: Should be timer service per plugon       
+        # TODO: Should be timer service per plugon
         self.proc_timer = tornado.ioloop.PeriodicCallback(procmon.monitor, self.sinterval)
         self.proc_timer.start()
         #------------------------------------------------

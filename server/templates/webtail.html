@@ -1,21 +1,80 @@
 <br />
-helooooo, webtail here
+<style>
+#logstream {
+    overflow-x:hidden;
+    overflow-y:visible;
+    height:92%;
+    background-color: beige;
+    font-family:"Helvetica Narrow","Arial Narrow",Courier;
+}
+</style>
+<input type="button" class="btn" id='idState' onclick="togglePause()" value="Pause">
+<input type="button" class="btn" onclick="clearLog()" value="Clear">
+<input type="button" class="btn" onclick="showSettingsModal()" value="Settings...">
+
+<br>
+<div id="logstream"></div>
 
 <script>
+g_autoScroll = 1;
+g_scrollState = ['Follow','Pause'];
+function togglePause()
+{
+    g_autoScroll = 1 - g_autoScroll;
+    if (g_autoScroll) {
+        var elem = document.getElementById('logstream');
+        elem.scrollTop = elem.scrollHeight;
+    }
+    document.getElementById('idState').value = g_scrollState[ g_autoScroll ];
+}
+
+function clearLog()
+{
+    document.getElementById('logstream').innerHTML = '';
+}
+
+function write_line(str)
+{
+    str = str.replace(/\n/g, "<br />");
+    var stream = document.getElementById('logstream');
+
+    stream.innerHTML += str;
+    if (g_autoScroll)
+        stream.scrollTop = stream.scrollHeight;
+}
+
+function showSettingsModal()
+{
+
+}
+var single = "wsock_exists";
+
 var conn = {
     onConnectAck : function(stat) {
         console.log("onConnectAck, status="+stat)
-        conn.send("hello from client")
+        if (stat == 'error') {
+            UI.del_global(single);
+        }
+        //conn.send("hello from client")
     },
     onData : function(data) {
-        console.log("received:"+data);
+        //console.log("received:"+data);
+        write_line(data);
     },
     onClose : function() {
+        debugger;
+        UI.del_global(single);
         console.log("received onClose");
     }
 };
 
 $(document).ready(function() {
+    if (UI.get_global(single)) {
+        return;
+    }
+
     UI.request_connection("webtail", conn)
+    UI.set_global(single, 1);
+
 })
 </script>

@@ -31,7 +31,7 @@
     <![endif]-->
 
 
-   <!-- TODO: for all the css files below and their corresponding js files, 
+   <!-- TODO: for all the css files below and their corresponding js files,
         iterate here on server side (i.e Python Tornado scriptingI) and get them
         from the directory of the appropriate plugin.
         Later versions can enable downloading and installing mymon
@@ -103,7 +103,7 @@
                             <a onClick="load('charts')" ><i class="fa fa-bar-chart-o fa-fw"></i> Memory</a>
                         </li>
                         <li>
-                            <a onClick="load('webtail')"><i class="fa fa-table fa-fw"></i> Logs</a>
+                            <a onClick="load('webtail')"><i class="fa fa-table fa-fw"></i> WebTail</a>
                         </li>
                     </ul>
                 </div>
@@ -141,7 +141,7 @@
                                 <div class="sk-circle10 sk-child"></div>
                                 <div class="sk-circle11 sk-child"></div>
                                 <div class="sk-circle12 sk-child"></div>
-                            </div>                        
+                            </div>
                         </p>
                     </div>
                 </div>
@@ -169,11 +169,11 @@
     <!-- Metis Menu Plugin JavaScript (https://github.com/onokumus/metismenu License:MIT) -->
     <script src="/res/js/metisMenu.min.js"></script>
 
-    <!-- Start Bootstrap Custom Theme JavaScript 
+    <!-- Start Bootstrap Custom Theme JavaScript
          (https://startbootstrap.com/template-overviews/sb-admin-2/ License:MIT) -->
     <script src="/res/js/sb-admin-2.min.js"></script>
 
-   <!-- TODO: for all the JS libraries below and their corresponding CSS files, 
+   <!-- TODO: for all the JS libraries below and their corresponding CSS files,
         iterate here on server side (i.e Python Tornado scriptingI) and get them
         from the directory of the appropriate plugin.
         Later versions can enable downloading downloading and installing mymon
@@ -191,7 +191,7 @@
 
     <script>
         var g_globals = {}
-        
+
         var g_wait_dialog;
 
         function  show_wait() {
@@ -207,7 +207,7 @@
 
         function hide_wait() {
             console.log("hide...")
-            $('#waitmodal').modal('hide')            
+            $('#waitmodal').modal('hide')
             /*
             g_wait_dialog.modal('hide');
             */
@@ -215,6 +215,13 @@
 
         // Interface for various views loaded into #pageview
         var UI = {
+            del_global: function(key) {
+                if (key in g_globals) {
+                    delete g_globals[key];
+                    return true;
+                }
+                return false;
+            },
             get_global: function(key) { return (key in g_globals) ? g_globals[key] : null },
             set_global: function(key, val) { g_globals[key] = val; },
             postRequestSilent: function( jsonData, callback ) {
@@ -269,7 +276,7 @@
                                     inservice = true;
                                     conn.send = function(data) {
                                         // connect the send method directly to the websocket send
-                                        ws.send(data); 
+                                        ws.send(data);
                                     }
                                 }
                             }
@@ -280,7 +287,7 @@
                                 console.log('Error: connection has no onConnectAck method');
                                 return;
                             }
-                            
+
                             conn.onConnectAck(stat)
                             return;
                         }
@@ -290,7 +297,7 @@
                         }
                         conn.onData(data);
                     }
-                    ws.onclose = function () { 
+                    ws.onclose = function () {
                         if (inservice) {
                             if (!('onClose' in conn)) {
                                 console.log('Error: connection has no onClose method');
@@ -325,13 +332,13 @@
             $( "#pageview" ).load( "/"+page+".html", function() {  // request relevant page
                 $( '#loading' ).hide()   // when received, hide wait animation
                 $( '#pageview' ).show(); // and show newly arrive page
-            });            
+            });
         }
 
         $(document).ready(function() {
             load('dashboard')
         });
-        
+
     </script>
 </body>
 

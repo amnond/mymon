@@ -2,6 +2,7 @@
 
 # Python watchdog package:
 # https://pypi.python.org/pypi/watchdog
+# installed via: pip install watchdog
 
 # Python watchdog documentation:
 # http://pythonhosted.org/watchdog/api.html#module-watchdog.events
@@ -24,12 +25,18 @@ if __name__ == "__main__":
     event_handler = MyHandler()
     observer = Observer()
     observer.schedule(event_handler, path='..', recursive=False)
-    observer.schedule(event_handler, path='.', recursive=False)
+    observer.schedule(event_handler, path='.', recursive=True)
     observer.start()
 
     try:
         while True:
             time.sleep(1)
+            #print("beep")
     except KeyboardInterrupt:
+        #print("before observer.stop()")
         observer.stop()
+        #print("after observer.stop()")
+
+    #print("before observer.join()")
     observer.join()
+    #print("after observer.join()")
