@@ -10,7 +10,7 @@ class _RequestHandler(object):
         self.ajax_handlers = {'__dashboard__': self.get_dashboard_ui}
         self.dashboard_handlers = {}
 
-    def get_dashboard_ui(self, packet):
+    def get_dashboard_ui(self, user, packet):
         """ collect all the dashboard UI from the different components """
         html = '<h5>Mymon Dashboard</h5><hr />'
         for handler in self.dashboard_handlers:
@@ -33,13 +33,13 @@ class _RequestHandler(object):
         self.ajax_handlers[request] = function
         return True
 
-    def ajax_request(self, packet):
+    def ajax_request(self, user, packet):
         """ invoke the appropriate method of the designated request handler """
         request = packet["request"]
         if not request in self.ajax_handlers:
             L.error("Error: request " + request + " does not have a handler")
             return {"status":"error", "msg":"no handler for "+request}
-        reply = self.ajax_handlers[request](packet)
+        reply = self.ajax_handlers[request](user, packet)
         reply['reply-to'] = request
         if 'ctx' in packet:
             # if context received with request, return it unchanged
@@ -61,17 +61,17 @@ class _RequestHandler(object):
         self.websock_handlers[service] = handlers
         return True
 
-    def websock_new_connection(self, client, service):
+    def websock_new_connection(self, user, client, service):
         """ Notify handler of new client """
         if not service in self.websock_handlers:
             L.error("Error: service:" + service + " not found for new connection")
             return False
-        return self.websock_handlers[service]['new_client'](client)
+        return self.websock_handlers[service]['new_client'](user, client)
 
-    def websock_message(self, client, message):
+    def websock_message(self, user, client, message):
         """ invoke the appropriate method of the designated websock request handler """
         service = client.service
-        self.websock_handlers[service]['new_message'](client, message)
+        self.websock_handlers[service]['new_message'](user, client, message)
         return
 
     def websock_close_connection(self, client):

@@ -59,10 +59,14 @@ class WebsockHandler(tornado.websocket.WebSocketHandler):
 
     def open(self):
         L.info("WebsockHandler open")
-        self.app.on_open_websock(self)
+        user = self.get_secure_cookie("user")
+        L.info("user="+user)
+        self.app.on_open_websock(self, user)
 
     def on_message(self, message):
-        self.app.on_msg_websock(self, message)
+        user = self.get_secure_cookie("user")
+        L.info("user="+user)
+        self.app.on_msg_websock(self, user, message)
 
     def on_close(self):
         self.app.on_close_websock(self)
@@ -83,7 +87,8 @@ class AjaxHandler(BaseHandler):
             L.error("Error: Received packet without request:" + spacket)
             return
 
-        reply = RH.ajax_request(packet)
+        user = self.get_current_user()
+        reply = RH.ajax_request(user, packet)
         response = json.dumps(reply)
         #self.write(response)
 
@@ -169,7 +174,7 @@ class Application(tornado.web.Application):
             tornado.web.url(r"/websock/", WebsockHandler, dict(app=self), name="websock"),
         ], **settings)
 
-    def on_open_websock(self, client):
+    def on_open_websock(self, client, user):
         """ new websoock has connected """
         self.listeners.append(client)
         L.info("websock connected")
@@ -183,7 +188,7 @@ class Application(tornado.web.Application):
         if hasattr(client, "service"):
             RH.websock_close_connection(client)
 
-    def on_msg_websock(self, client, message):
+    def on_msg_websock(self, client, user, message):
         """ new message from existing websock """
         L.info("websock message:" + message)
         if not hasattr(client, "service"):
@@ -203,7 +208,7 @@ class Application(tornado.web.Application):
                 client.write_message(json.dumps(reply))
                 return
             service = packet['service']
-            if not RH.websock_new_connection(client, service):
+            if not RH.websock_new_connection(user, client, service):
                 msg = "service " + service + " unavailable"
                 L.error(msg)
                 reply = {"status":"error", "msg":msg}
@@ -214,7 +219,7 @@ class Application(tornado.web.Application):
             client.service = service
             return
 
-        RH.websock_message(client, message)
+        RH.websock_message(user, client, message)
 
 class Web(object):
     """ The interface to the Web service from the mymon daemon """

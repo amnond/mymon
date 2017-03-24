@@ -4,6 +4,7 @@ import psutil # https://github.com/giampaolo/psutil
 
 from db import DB
 from reqhandler import RH
+from logger import L
 
 class Procmon(object):
     """ Procmon encapsulates information collection of OS process """
@@ -20,13 +21,14 @@ class Procmon(object):
         """ caclulate free memory """
         pass
 
-    def handle_currmem_req(self, packet):
+    def handle_currmem_req(self, user, packet):
         """ process to requset memory snapshot """
+        L.info("handle_currmem_req, user="+user)
         totmem = psutil.virtual_memory()
         reply = {"used":totmem.used, "available":totmem.available, "free":totmem.free,}
         return reply
 
-    def handle_memlog_req(self, packet):
+    def handle_memlog_req(self, user, packet):
         """ process the requset we regitered to handle """
         #print("=========" + json.dumps(packet))
         start = packet['start']

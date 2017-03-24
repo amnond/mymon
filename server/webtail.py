@@ -123,7 +123,7 @@ class WebTail(FileSystemEventHandler):
         self.observer.stop()
         self.observer.join()
 
-    def new_client(self, client):
+    def new_client(self, user, client):
         """ invoked whenever a new client joins the service webtail"""
         L.info("received new client")
         self.lock.acquire()
@@ -131,7 +131,7 @@ class WebTail(FileSystemEventHandler):
         self.lock.release()
         return True
 
-    def new_message(self, client, message):
+    def new_message(self, user, client, message):
         """ invoked whenever a client sends a new message to service webtail"""
         L.info("received new message:"+message)
         #client.write_message("hello from server")
