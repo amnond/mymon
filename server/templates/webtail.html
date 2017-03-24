@@ -3,27 +3,33 @@
 #logstream {
     overflow-x:hidden;
     overflow-y:visible;
-    background-color: #ddddff;
-    border: 1px solid black;
+    background-color: #fdfaff;
+    border: 1px solid #adadfd;
     font-family:"Helvetica Narrow","Arial Narrow",Courier;
 }
 </style>
-<input type="button" class="btn" id='idState' onclick="togglePause()" value="Pause">
-<input type="button" class="btn" onclick="clearLog()" value="Clear">
-<input type="button" class="btn" onclick="showSettingsModal()" value="Settings...">
+<a class="btn btn-default" id='idState' onclick="togglePause()" >Pause</a>
+<a class="btn btn-default" onclick="clearLog()">Clear</a>
+<a class="btn btn-default" onclick="showSettingsModal()">Settings...</a>
 <br />
 <br />
 <div id="logstream"></div>
 
 <script>
 $(document).ready(function() {
-    // console.log($('#page-wrapper').height())
-    // console.log($('#logstream').offset().top)
-    var logw = $('#logstream');
-    var logheight = $('#page-wrapper').height() - logw.offset().top;
-    logw.height(logheight);
-    //logw.css("height", logheight+"px");
+    adjust();
 });
+
+$(window).on('resize', function() {
+    adjust();
+});
+
+function adjust()
+{
+    var logw = $('#logstream');
+    var logheight = $('#page-wrapper').outerHeight() - logw.offset().top;
+    logw.height(logheight);
+}
 
 g_autoScroll = 1;
 g_scrollState = ['Follow','Pause'];
@@ -34,20 +40,22 @@ function togglePause()
         var elem = document.getElementById('logstream');
         elem.scrollTop = elem.scrollHeight;
     }
-    document.getElementById('idState').value = g_scrollState[ g_autoScroll ];
+    $('#idState').html( g_scrollState[ g_autoScroll ] );
 }
 
 function clearLog()
 {
-    document.getElementById('logstream').innerHTML = '';
+    $('#logstream').html('');
 }
 
 function write_line(str)
 {
-    str = str.replace(/\n/g, "<br />");
+    var packet = JSON.parse(str);
+    var line = packet.l.replace(/\n/g, "<br />");
+    line = packet.t + ':' + line;
     var stream = document.getElementById('logstream');
 
-    stream.innerHTML += str;
+    stream.innerHTML += line;
     if (g_autoScroll)
         stream.scrollTop = stream.scrollHeight;
 }

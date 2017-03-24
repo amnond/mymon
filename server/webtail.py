@@ -64,11 +64,11 @@ class WebTail(FileSystemEventHandler):
             self.lock.acquire()
             try:
                 info = {
-                    "stime" : time.strftime("%Y-%m-%d %H:%M"),
-                    "path" : fullpath,
+                    "t" : time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "p" : fullpath,
                 }
                 while line:
-                    info['line'] = line
+                    info['l'] = line
                     for websock in self.listeners:
                         try:
                             out = json.dumps(info)
