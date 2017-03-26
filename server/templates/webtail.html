@@ -48,14 +48,16 @@ function clearLog()
     $('#logstream').html('');
 }
 
-function write_line(str)
+function write_line(packet)
 {
-    var packet = JSON.parse(str);
-    var line = packet.l.replace(/\n/g, "<br />");
-    line = packet.t + ':' + line;
+    var lines = packet.l.split("\n");
+    html = "";
+    for (var i=0; i<lines.length-1; i++) {
+        html +=  packet.t + ':' + lines[i] + "<br />";
+    }
     var stream = document.getElementById('logstream');
 
-    stream.innerHTML += line;
+    stream.innerHTML += html;
     if (g_autoScroll)
         stream.scrollTop = stream.scrollHeight;
 }
@@ -72,11 +74,20 @@ var conn = {
         if (stat == 'error') {
             UI.del_global(single);
         }
-        //conn.send("hello from client")
+        var req = {
+            "request": "monitor_files",
+            "files": ["/Users/amnondavid/projects/mymon/hello.txt"]
+        }
+        conn.send(JSON.stringify(req));
     },
     onData : function(data) {
         //console.log("received:"+data);
-        write_line(data);
+        var packet = JSON.parse(data)
+        if ('t' in packet && 'l' in packet) {
+            write_line(packet);
+            return;
+        }
+        console.log(packet);
     },
     onClose : function() {
         //debugger;

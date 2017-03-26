@@ -43,8 +43,8 @@ class _DB(object):
         get_proc_codes = "SELECT * FROM prcode2name"
 
         try:
-            dbpath = os.path.realpath(__file__)
-            dbname = os.path.dirname(dbpath) + '/mon.db'
+            dirname = os.path.dirname(os.path.realpath(__file__))
+            dbname = os.path.join(dirname, 'mon.db')
             L.info(dbname)
             self.con = lite.connect(dbname)
             self.con.isolation_level = None

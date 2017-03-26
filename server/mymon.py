@@ -25,8 +25,9 @@ import time
 from web import Web
 
 LOGPATH = os.path.realpath(__file__)
-OUTNAME = os.path.dirname(LOGPATH) + '/mymon_out.log'
-ERRNAME = os.path.dirname(LOGPATH) + '/mymon_err.log'
+DIR = os.path.dirname(LOGPATH)
+OUTNAME = os.path.join(DIR, 'mymon_out.log')
+ERRNAME = os.path.join(DIR, 'mymon_err.log')
 
 def output(str):
     ''' temporary replacement for daemon output '''
