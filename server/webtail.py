@@ -162,20 +162,44 @@ class WebTail(FileSystemEventHandler):
             self.config[user] = {
                 "monitored_files":{}
             }
-        for filepath in self.config[user]["monitored_files"]:
+        user_watched_files = self.config[user]["monitored_files"]
+        L.info("==============")
+        L.info(user_watched_files)
+        resave_config = False
+        for filepath in user_watched_files:
+            dirok = True
             dirf = path.dirname(filepath)
             if dirf in self.follow_dirs:
-                L.info(dirf + ": directory already being monitoed")
+                L.info(dirf + ": directory already being monitored")
                 self.follow_dirs[dirf] += 1 # TODO: implement ref couting
             else:
-                self.observer.schedule(self, path=dirf, recursive=False)
-                self.follow_dirs[dirf] = 1
+                try:
+                    self.observer.schedule(self, path=dirf, recursive=False)
+                except OSError:
+                    dirok = False
+                except Exception:
+                    dirok = False
+
+                if dirok:
+                    # add to set of directories to follow
+                    self.follow_dirs[dirf] = 1
+                else:
+                    L.error("Bad file path for:"+filepath)
+                    # This directory is crap, continue to next file to monitor
+                    user_watched_files[filepath] = 0
+                    resave_config = True
+                    continue
 
             if filepath in self.path_filter:
-                L.info(filepath + ": file already being monitoed")
+                L.info(filepath + ": file already being monitored")
                 self.path_filter[filepath] += 1 # TODO: implement ref couting
             else:
                 self.path_filter[filepath] = 1
+
+        if resave_config:
+            # Some bad file paths encountered and were marked. Resave users configurations
+            # with the marked bad paths so that they can be displayed on the client side
+            self.save_config()
 
     def save_config(self):
         """ make the current configuration persistent """
@@ -187,6 +211,7 @@ class WebTail(FileSystemEventHandler):
         self.lock.acquire()
         self.listeners[client] = {"user": user}
         self.lock.release()
+        # new user means possibly more directories and files to monitor
         self.update_files_to_monitor(user)
         return True
 
@@ -242,20 +267,16 @@ class WebTail(FileSystemEventHandler):
         if "files" not in packet:
             return {"status":"error", "msg":"no files given"}
 
-        mfiles = self.config[user]["monitored_files"]
+        self.config[user]["monitored_files"] = packet['files']
+        # The following can modify self.config[user]["monitored_files"]
+        # if bad directories are included in that dictionary
+        self.update_files_to_monitor(user)
+        self.save_config()
 
-        new = False
-        for pathname in packet["files"]:
-            if pathname not in mfiles:
-                new = True
-                mfiles[pathname] = 1
-
-        if new:
-            self.update_files_to_monitor(user)
-            self.save_config()
-
-        return {"status":"ok"}
-
+        return {
+            "status":"ok",
+            "monitored":self.config[user]["monitored_files"]
+        }
 
     def get_monitored_files(self, user, packet):
         """ get the set of files user is currently monitoring """

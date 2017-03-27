@@ -10,7 +10,7 @@
 </style>
 <a class="btn btn-default" id='idState' onclick="togglePause()" >Pause</a>
 <a class="btn btn-default" onclick="clearLog()">Clear</a>
-<a class="btn btn-default" onclick="showSettingsModal()">Settings...</a>
+<a class="btn btn-default" id='idSettings' onclick="showSettingsModal()">Settings...</a>
 <br />
 <br />
 <div id="logstream"></div>
@@ -68,13 +68,96 @@ function write_line(packet)
         stream.scrollTop = stream.scrollHeight;
 }
 
+var TDH = '<td class="wall">&nbsp;</td>' // just for height
+var TDHB = '<td class="wall"><i class="fa fa-frown-o"></i></td>' // just for height
+
+function getFilesFromTable()
+{
+    var table_files = $("#idMonitored td").not(".wall");
+    files = {};
+    for (var i=0; i<table_files.length; i++) {
+        var file = $.trim(table_files[i].textContent);
+        if (file != "") {
+            files[file] = 1;
+        }
+    }
+    return files;
+}
+
+function updateTable()
+{
+    var files = getFilesFromTable();
+    var html = getTableHTML(files);
+    $('#idFilesTable').html(html);
+    $('#idMonitored').editableTableWidget();
+    $('#idMonitored td').on('change', function(evt, newValue) {
+        updateTable()
+    });
+    g_files = files;
+}
+
+function getTableHTML(files)
+{
+    // Build html table according to contents of g_files
+    var colors = [ '#dbe5f7', '#f8edff' ];
+    var m = 1;
+    var html = '<table id="idMonitored" class="table">';
+    html += '<thead><tr><th>Remote files to monitor (click to edit/add)</th><th></th></tr></thead>';
+    html += '<tbody>';
+    for (var file in files) {
+        m = 1 - m;
+        html += '<tr><td style="background-color:'+colors[m]+'">'+ file +'</td>';
+        var td = TDH;
+        if (files[file] == 0) {
+            // Server marked this as a bad directory
+            td = TDHB;
+        }
+        html += td + '</tr>';
+    }
+    m = 1 - m;
+    html += '<tr><td style="background-color:'+colors[m]+'"></td>'+ TDH +'</tr>';
+    html += '</tbody>';
+    html += '</table>';
+    return html;
+}
+
 function showSettingsModal()
 {
+    var html = '<div id="idFilesTable">';
+    html += getTableHTML(g_files);
+    html += '</div>';
+    showBSModal({
+        title: "WebTail Settings",
+        body: html,
+        onShow: function() {
+            $('#idMonitored').editableTableWidget();
+            $('#idMonitored td').on('change', function(evt, newValue) {
+                updateTable()
+            });
+        },
+        size: "large",
+        actions: [{
+            label: 'Cancel',
+            cssClass: 'btn-default',
+            onClick: function(e){
+                $(e.target).parents('.modal').modal('hide');
+            }
+        },{
+            label: 'Confirm',
+            cssClass: 'btn-success',
+            onClick: function(e){
+                $(e.target).parents('.modal').modal('hide');
+                set_monitored_files();
+            }
+        }]
+    });
+
 }
 
 var g_handle_replies = {
-    "monitored_files" : function(packet) {
-
+    "monitor_files" : function(packet) {
+        g_files = packet.monitored;
+        UI.set_global(constMonitored, g_files); // in case user leaves view
     },
     "get_monitored_files" : function(packet) {
         if (!('files' in packet)) {
@@ -82,15 +165,16 @@ var g_handle_replies = {
             return;
         }
         g_files = packet.files;
-        UI.set_global(constMonitored, g_files);
+        UI.set_global(constMonitored, g_files); // in case user leaves view
     }
 }
 
 
 function set_monitored_files() {
+
     var req = {
         "request": "monitor_files",
-        "files": ["/Users/amnondavid/projects/mymon/hello.txt"]
+        "files": g_files
     }
 
     conn.send(JSON.stringify(req));
@@ -128,7 +212,6 @@ var conn = {
         g_handle_replies[replyto](packet);
     },
     onClose : function() {
-        //debugger;
         UI.del_global(constSingleWSock);
         console.log("received onClose");
     }
@@ -141,6 +224,5 @@ $(document).ready(function() {
 
     UI.request_connection("webtail", conn)
     UI.set_global(constSingleWSock, 1);
-
 })
 </script>

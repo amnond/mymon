@@ -24,6 +24,7 @@ class MyHandler(FileSystemEventHandler):
 if __name__ == "__main__":
     event_handler = MyHandler()
     observer = Observer()
+    observer.schedule(event_handler, path='/var/log/', recursive=False)
     observer.schedule(event_handler, path='..', recursive=False)
     observer.schedule(event_handler, path='.', recursive=True)
     observer.start()
