@@ -16,15 +16,21 @@
 <div id="logstream"></div>
 
 <script>
+var constMonitored = "webtail:monitored_files";
+var constSingleWSock = "webtail:wsock_exists";
+
+var g_files = null;
+
 $(document).ready(function() {
-    adjust();
+    g_files =  UI.get_global(constMonitored);
+    adjustLogWindowSize();
 });
 
 $(window).on('resize', function() {
-    adjust();
+    adjustLogWindowSize();
 });
 
-function adjust()
+function adjustLogWindowSize()
 {
     var logw = $('#logstream');
     var logheight = $('#page-wrapper').outerHeight() - logw.offset().top;
@@ -66,18 +72,41 @@ function showSettingsModal()
 {
 }
 
-var single = "wsock_exists";
+var g_handle_replies = {
+    "monitored_files" : function(packet) {
+
+    },
+    "get_monitored_files" : function(packet) {
+        if (!('files' in packet)) {
+            console.log("no 'files' in packet")
+            return;
+        }
+        g_files = packet.files;
+        UI.set_global(constMonitored, g_files);
+    }
+}
+
+
+function set_monitored_files() {
+    var req = {
+        "request": "monitor_files",
+        "files": ["/Users/amnondavid/projects/mymon/hello.txt"]
+    }
+
+    conn.send(JSON.stringify(req));
+}
 
 var conn = {
     onConnectAck : function(stat) {
         console.log("onConnectAck, status="+stat)
         if (stat == 'error') {
-            UI.del_global(single);
+            UI.del_global(constSingleWSock);
         }
+
         var req = {
-            "request": "monitor_files",
-            "files": ["/Users/amnondavid/projects/mymon/hello.txt"]
+            "request": "get_monitored_files"
         }
+
         conn.send(JSON.stringify(req));
     },
     onData : function(data) {
@@ -88,21 +117,30 @@ var conn = {
             return;
         }
         console.log(packet);
+        if (!('reply-to' in packet)) {
+            return;
+        }
+        var replyto = packet['reply-to'];
+        if (!(replyto in g_handle_replies)) {
+            console.log("no handler for reply-to:"+replyto)
+            return;
+        }
+        g_handle_replies[replyto](packet);
     },
     onClose : function() {
         //debugger;
-        UI.del_global(single);
+        UI.del_global(constSingleWSock);
         console.log("received onClose");
     }
 };
 
 $(document).ready(function() {
-    if (UI.get_global(single)) {
+    if (UI.get_global(constSingleWSock)) {
         return;
     }
 
     UI.request_connection("webtail", conn)
-    UI.set_global(single, 1);
+    UI.set_global(constSingleWSock, 1);
 
 })
 </script>

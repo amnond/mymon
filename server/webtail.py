@@ -260,5 +260,5 @@ class WebTail(FileSystemEventHandler):
     def get_monitored_files(self, user, packet):
         """ get the set of files user is currently monitoring """
         mfiles = self.config[user]["monitored_files"]
-        reply = {"status":"ok", "monitored_files":mfiles}
+        reply = {"status":"ok", "files":mfiles}
         return reply
