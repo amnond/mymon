@@ -226,6 +226,7 @@ class Web(object):
     def __init__(self):
         self.port = 8888
         self.proc_timer = None
+        self.tail_timer = None
         self.sinterval = 15 * 60 * 1000
 
     def set_config(self, conf):
@@ -246,6 +247,9 @@ class Web(object):
 
         #------------------------------------------------
         # TODO: Should be timer service per plugon
+        self.tail_timer = tornado.ioloop.PeriodicCallback(webtail.follow, 1000)
+        self.tail_timer.start()
+
         self.proc_timer = tornado.ioloop.PeriodicCallback(procmon.monitor, self.sinterval)
         self.proc_timer.start()
         #------------------------------------------------

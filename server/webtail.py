@@ -1,8 +1,6 @@
 """ Process monitor: scans processes and sends status to database """
 import time
-import threading
 import json
-from os import path
 
 from reqhandler import RH
 from logger import L
@@ -16,22 +14,18 @@ import jsonfile
 
 # Python watchdog documentation:
 # http://pythonhosted.org/watchdog/api.html#module-watchdog.events
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
 
-class WebTail(FileSystemEventHandler):
+class WebTail(object):
     """ WebTail handles log files to monitor """
     def __init__(self):
         # set of file paths for which monitoring has been requested by all users
         self.path_filter = {}
-        # set of derived directories that are being followed by watchdog observer
-        self.follow_dirs = {}
         # mapping between client webtail plugin requests and this plugin's methods
         self.webtail_funcs = {
             "get_monitored_files" : self.get_monitored_files,
             "monitor_files" : self.monitor_files
         }
-        self.tailed_files = {}
+        self.tailed_file_ptrs = {}
         self.listeners = {}
         data = jsonfile.load_json("webtail")
         if data is False:
@@ -41,34 +35,17 @@ class WebTail(FileSystemEventHandler):
                                      self.new_client,
                                      self.new_message,
                                      self.close_client)
-        event_handler = self
-        self.lock = threading.Lock()
 
-        self.observer = Observer()
-        for directory in self.follow_dirs:
-            self.observer.schedule(event_handler, path=directory, recursive=False)
-
-        self.observer.start() # start the watchdog thread
-        self.event_methods = {
-            "FileModifiedEvent" : self.on_file_modified,
-            "FileCreatedEvent" : self.on_file_created,
-            "FileDeletedEvent" : self.on_file_deleted,
-            "FileMovedEvent" : self.on_file_moved
-        }
-
-    def on_any_event(self, event):
-        normpath = path.normpath(event.src_path)
-        fullpath = path.realpath(normpath)
-        evtname = type(event).__name__
-        if evtname not in self.event_methods:
-            return
-        #print "%s: %s" % ( evtname, fullpath )
-        self.event_methods[evtname](fullpath)
-
-    def log_exeption(self, ex, str):
+    def log_exeption(self, ex, msg):
         """ generic exception logging """
         L.error(type(ex).__name__)
-        L.error(str)
+        L.error(msg)
+
+    def follow(self):
+        """ invoked by a timer event. Follow all files in aggregated list
+            and send log deltas to listening clients """
+        for fullpath in self.path_filter:
+            self.follow_file(fullpath)
 
     def follow_file(self, fullpath):
         """ get latest changes in a file and send to client """
@@ -80,7 +57,6 @@ class WebTail(FileSystemEventHandler):
         if not line:
             filep.seek(where)
         else:
-            self.lock.acquire()
             try:
                 info = {
                     "t" : time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -107,7 +83,6 @@ class WebTail(FileSystemEventHandler):
             except Exception as ex:
                 self.log_exeption(ex, "Exception while reading lines from:" + fullpath)
 
-            self.lock.release()
         where = filep.tell()
         filep.seek(where)
 
@@ -115,46 +90,26 @@ class WebTail(FileSystemEventHandler):
         """ remove file from list of tracked files """
         if fullpath not in self.path_filter:
             return
-        if fullpath not in self.tailed_files:
+        if fullpath not in self.tailed_file_ptrs:
             L.error("can't unfollow " + fullpath + " as it is not followed.")
             return
-        self.tailed_files[fullpath].close()
-        del self.tailed_files[fullpath]
-        pass
+        self.tailed_file_ptrs[fullpath].close()
+        del self.tailed_file_ptrs[fullpath]
 
     def get_fp(self, fullpath):
         """ given a path name, return and existing or created file pointer """
-        if fullpath in self.tailed_files:
-            return self.tailed_files[fullpath]
-        filep = open(fullpath)
-        # TODO: If we want to show the previous few log lines to every new user then
-        #       we'll need tp save a file pointer for every user. This eems too wasteful
-        #       for the added functionality
-        #filep.seek(-240, 2) # point to (hopefully) a few lines before end of the file
-        #filep.readline() # skip any semi line we've landed on
-        self.tailed_files[fullpath] = filep
+        filep = None
+        if fullpath in self.tailed_file_ptrs:
+            return self.tailed_file_ptrs[fullpath]
+        try:
+            filep = open(fullpath)
+        except Exception as ex:
+            self.log_exeption(ex, "opening file " + fullpath)
+            return filep
+
+        filep.seek(0, 2)
+        self.tailed_file_ptrs[fullpath] = filep
         return filep
-
-    def on_file_modified(self, fullpath):
-        """ a file in the requested paths has been modified """
-        self.follow_file(fullpath)
-
-    def on_file_created(self, fullpath):
-        """ a file in the requested paths has been created """
-        self.follow_file(fullpath)
-
-    def on_file_deleted(self, fullpath):
-        """ a file in the requested paths has been deleted """
-        self.unfollow_file(fullpath)
-
-    def on_file_moved(self, fullpath):
-        """ a file in the requested paths has been moved """
-        self.unfollow_file(fullpath)
-
-    def shutdown(self):
-        """ close the watchdog thread and clean up """
-        self.observer.stop()
-        self.observer.join()
 
     def update_files_to_monitor(self, user):
         """ read user file monitor prefs and update monitoring paths if required """
@@ -163,38 +118,22 @@ class WebTail(FileSystemEventHandler):
                 "monitored_files":{}
             }
         user_watched_files = self.config[user]["monitored_files"]
-        L.info("==============")
-        L.info(user_watched_files)
+        # L.info("==============")
+        # L.info(user_watched_files)
         resave_config = False
         for filepath in user_watched_files:
-            dirok = True
-            dirf = path.dirname(filepath)
-            if dirf in self.follow_dirs:
-                L.info(dirf + ": directory already being monitored")
-                self.follow_dirs[dirf] += 1 # TODO: implement ref couting
-            else:
-                try:
-                    self.observer.schedule(self, path=dirf, recursive=False)
-                except OSError:
-                    dirok = False
-                except Exception:
-                    dirok = False
-
-                if dirok:
-                    # add to set of directories to follow
-                    self.follow_dirs[dirf] = 1
-                else:
-                    L.error("Bad file path for:"+filepath)
-                    # This directory is crap, continue to next file to monitor
-                    user_watched_files[filepath] = 0
-                    resave_config = True
-                    continue
-
             if filepath in self.path_filter:
                 L.info(filepath + ": file already being monitored")
-                self.path_filter[filepath] += 1 # TODO: implement ref couting
-            else:
-                self.path_filter[filepath] = 1
+                self.path_filter[filepath] += 1 # reference couting
+                continue
+
+            if not self.get_fp(filepath):
+                L.error("Bad file path for:"+filepath)
+                user_watched_files[filepath] = 0
+                resave_config = True
+                continue
+
+            self.path_filter[filepath] = 1
 
         if resave_config:
             # Some bad file paths encountered and were marked. Resave users configurations
@@ -208,9 +147,7 @@ class WebTail(FileSystemEventHandler):
     def new_client(self, user, client):
         """ invoked whenever a new client joins the service webtail"""
         L.info("received new client")
-        self.lock.acquire()
         self.listeners[client] = {"user": user}
-        self.lock.release()
         # new user means possibly more directories and files to monitor
         self.update_files_to_monitor(user)
         return True
@@ -256,9 +193,18 @@ class WebTail(FileSystemEventHandler):
 
     def close_client(self, client):
         """ invoked whenever a new client joins the service webtail"""
-        self.lock.acquire()
+        info = self.listeners[client]
+        user = info['user']
+        user_watched_files = self.config[user]["monitored_files"]
+        for filepath in user_watched_files:
+            self.path_filter[filepath] -= 1
+            if self.path_filter[filepath] == 0:
+                L.info("reference count 0 for file "+filepath)
+                self.tailed_file_ptrs[filepath].close()
+                del self.tailed_file_ptrs[filepath]
+                del self.path_filter[filepath]
+
         del self.listeners[client]
-        self.lock.release()
         L.info("webtail - client closed")
 
     #-------------------------
