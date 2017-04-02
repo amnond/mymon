@@ -63,7 +63,16 @@ function write_line(packet)
     var lines = packet.l.split("\n");
     html = "";
     for (var i=0; i<lines.length-1; i++) {
-        html +=  packet.t + ':' + lines[i] + "<br />";
+        var line = lines[i];
+        for (var j=0; j<g_regexes.length; j++) {
+            var matchcol = g_regexes[i];
+            var rfind = RegExp(matchcol.pattern);
+            var col = matchcol.colour;
+            line = line.replace(rfind, function (v) {
+                return "<span style='background-color:"+col+"'>" + v + "</span>"
+            });
+        }
+        html +=  packet.t + ':' + line + "<br />";
     }
     var stream = document.getElementById('logstream');
 
@@ -103,11 +112,11 @@ function getRegexFromTable()
     for (var i=1; i<rowLength; i+=1) {
         var row = table.rows[i];
         var pattern = row.cells[0].textContent;
-        var colour = row.cells[1].textContent;
-        if (pattern.trim() == '' || color.trim() == '') {
+        var color = row.cells[1].textContent;
+        if (pattern.trim() == '' && color.trim() == '') {
             continue;
         }
-        rows.push( {pattern:pattern, colour:colour} );
+        rows.push( {pattern:pattern, colour:color} );
     }
     return rows;
 }
@@ -122,7 +131,7 @@ function getRegexHTML(regexes)
     var m = 1;
     var html = '<table id="idRegexTable" class="table">';
     html += '<thead><tr>';
-    html += '<th>Regex (click to edit/add)</th><th>Color</th><th></th>';
+    html += '<th>Match Regex</th><th>Background Color</th><th></th>';
     html += '</tr></thead>';
     html += '<tbody>';
     for (var i=0; i<regexes.length; i++) {
@@ -166,7 +175,7 @@ function getFilesHTML(files)
     var colors = [ '#dbe5f7', '#f8edff' ];
     var m = 1;
     var html = '<table id="idMonitoredTable" class="table">';
-    html += '<thead><tr><th>Remote files to monitor (click to edit/add)</th>';
+    html += '<thead><tr><th>Remote files to monitor</th>';
     html += '<th>Follow</th>';
     html += '<th></th></tr></thead>';
     html += '<tbody>';
@@ -200,9 +209,11 @@ function showSettingsModal()
 {
     var html = '<div id="idWebtailSettings" style="width:100%; ';
     html += ' overflow-y:auto;" >';
+    html += 'Set files to monitor (click to add/modify)';
     html += '<div id="idFilesDiv">';
     html += getFilesHTML(g_files);
     html += '</div>';
+    html += 'Highlight regex pattern with background colour (click to add/modify)';
     html += '<div id="idRegexDiv">';
     html += getRegexHTML(g_regexes);
     html += '</div>';
