@@ -269,6 +269,10 @@
                     var req = {service:service}
                     var sreq = JSON.stringify(req);
                     var ws = new WebSocket("ws://{{ host }}/websock/");
+                    conn.close = function() {
+                        ws.onclose = function () {}; // disable onclose handler first
+                        ws.close()
+                    }
                     ws.onopen = function () { ws.send(sreq) };
                     ws.onmessage = function(evt) {
                         //console.log(evt);
@@ -334,6 +338,11 @@
         }
 
         function load(page) {
+            if ('on_view_unloading' in window &&
+                typeof window.on_view_unloading == 'function' ) {
+                on_view_unloading();
+                delete window.on_view_unloading;
+            }
             $( '#pageview' ).hide();   // hide current page view
             $( '#loading' ).show()     // show animation until new page is received
             $( "#pageview" ).load( "/"+page+".html", function() {  // request relevant page

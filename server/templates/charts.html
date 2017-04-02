@@ -89,7 +89,7 @@ Getting memory...
     <table class="daterange">
         <tr>
             <td>
-                Period:  
+                Period:
             </td>
             <td>
                 <input type="text" style='width:190px;' id="idcalpick" class="form-control">
@@ -111,12 +111,17 @@ Getting memory...
 
 
 <script>
-    var mappings; 
+    var mappings;
     var key_mappings = 'charts:mappings';
     var graph2d_procsmem;
     var graph2d_totalmem;
     var procs_groups;
     var tlmem_groups;
+
+    function on_view_unloading()
+    {
+        console.log("memory view unloading")
+    }
 
     $(document).ready(function() {
         /*
@@ -145,13 +150,13 @@ Getting memory...
             // console.log(label)
         });
 
-        reqCurrNem()        
+        reqCurrNem()
     });
 
     function reqCurrNem()
     {
         var json = {request:'currmem'};
-        UI.postRequestSilent(json, processCurrMem)        
+        UI.postRequestSilent(json, processCurrMem)
     }
 
     function sendDateRange()
@@ -190,7 +195,7 @@ Getting memory...
         // Total memory graph container
         var visdisplay = '<h5>System Memory</h5><div id="total_memchart"></div>';
         visdisplay += '<br /><h5>Processes Memory</h5>';
-        // Processes graph container        
+        // Processes graph container
         visdisplay += '<div id="procs_memchart"></div>';
         // Processes graph external legend container
         visdisplay += '<div style="height:100px; overflow-y: auto; background-color:#cdcdcd"><center>';
@@ -404,7 +409,7 @@ Getting memory...
             if (typeof(legend.icon)=='undefined') {
                 console.log("Error: can't find icon for "+groupid)
                 continue;
-            }           
+            }
             // create divs
             var containerDiv = document.createElement("div");
             var iconDiv = document.createElement("div");
@@ -455,5 +460,5 @@ Getting memory...
             container.className = container.className.replace("switched_off","");
         }
     }
-        
+
 </script>

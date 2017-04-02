@@ -19,12 +19,56 @@
 <script>
 var constMonitored = "webtail:monitored_files";
 var constRegexes = "webtail:regexes";
-var constSingleWSock = "webtail:wsock_exists";
 
 var g_files = null;
 var g_regexes = null;
 
+var conn = {
+    onConnectAck : function(stat) {
+        console.log("onConnectAck, status="+stat)
+        if (stat == 'error') {
+            return;
+        }
+
+        var req = {
+            "request": "get_settings"
+        }
+
+        conn.send(JSON.stringify(req));
+    },
+    onData : function(data) {
+        //console.log("received:"+data);
+        var packet = JSON.parse(data)
+        if ('t' in packet && 'l' in packet) {
+            write_line(packet);
+            return;
+        }
+        console.log(packet);
+        if (!('reply-to' in packet)) {
+            return;
+        }
+        var replyto = packet['reply-to'];
+        if (!(replyto in g_handle_replies)) {
+            console.log("no handler for reply-to:"+replyto)
+            return;
+        }
+        g_handle_replies[replyto](packet);
+    },
+    onClose : function() {
+        console.log("received onClose");
+    }
+};
+
+function on_view_unloading()
+{
+    console.log("webtail view unloading")
+    // close the connection to the server webtail plugin
+    conn.close();
+}
+
 $(document).ready(function() {
+    // create a connection to the server webtail plugin
+    UI.request_connection("webtail", conn)
     g_files =  UI.get_global(constMonitored);
     g_regexes =  UI.get_global(constRegexes);
     adjustLogWindowSize();
@@ -300,49 +344,4 @@ function send_settings(files, regexes) {
     conn.send(JSON.stringify(req));
 }
 
-var conn = {
-    onConnectAck : function(stat) {
-        console.log("onConnectAck, status="+stat)
-        if (stat == 'error') {
-            UI.del_global(constSingleWSock);
-        }
-
-        var req = {
-            "request": "get_settings"
-        }
-
-        conn.send(JSON.stringify(req));
-    },
-    onData : function(data) {
-        //console.log("received:"+data);
-        var packet = JSON.parse(data)
-        if ('t' in packet && 'l' in packet) {
-            write_line(packet);
-            return;
-        }
-        console.log(packet);
-        if (!('reply-to' in packet)) {
-            return;
-        }
-        var replyto = packet['reply-to'];
-        if (!(replyto in g_handle_replies)) {
-            console.log("no handler for reply-to:"+replyto)
-            return;
-        }
-        g_handle_replies[replyto](packet);
-    },
-    onClose : function() {
-        UI.del_global(constSingleWSock);
-        console.log("received onClose");
-    }
-};
-
-$(document).ready(function() {
-    if (UI.get_global(constSingleWSock)) {
-        return;
-    }
-
-    UI.request_connection("webtail", conn)
-    UI.set_global(constSingleWSock, 1);
-})
 </script>
