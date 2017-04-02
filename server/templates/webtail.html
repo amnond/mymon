@@ -65,7 +65,7 @@ function write_line(packet)
     for (var i=0; i<lines.length-1; i++) {
         var line = lines[i];
         for (var j=0; j<g_regexes.length; j++) {
-            var matchcol = g_regexes[i];
+            var matchcol = g_regexes[j];
             var rfind = RegExp(matchcol.pattern);
             var col = matchcol.colour;
             line = line.replace(rfind, function (v) {
