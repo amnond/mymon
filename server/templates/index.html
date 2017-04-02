@@ -169,6 +169,9 @@
     <!-- Metis Menu Plugin JavaScript (https://github.com/onokumus/metismenu License:MIT) -->
     <script src="/res/js/metisMenu.min.js"></script>
 
+    <!-- Javascript utility functions -->
+    <script src="/res/js/utils.js"></script>
+
     <!-- Start Bootstrap Custom Theme JavaScript
          (https://startbootstrap.com/template-overviews/sb-admin-2/ License:MIT) -->
     <script src="/res/js/sb-admin-2.js"></script>
@@ -268,7 +271,7 @@
                     var ws = new WebSocket("ws://{{ host }}/websock/");
                     ws.onopen = function () { ws.send(sreq) };
                     ws.onmessage = function(evt) {
-                        console.log(evt);
+                        //console.log(evt);
                         var data = evt.data;
                         if (!inservice) {
                             var stat = 'error'

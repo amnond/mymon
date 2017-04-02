@@ -22,8 +22,8 @@ class WebTail(object):
         self.path_filter = {}
         # mapping between client webtail plugin requests and this plugin's methods
         self.webtail_funcs = {
-            "get_monitored_files" : self.get_monitored_files,
-            "monitor_files" : self.monitor_files
+            "get_settings" : self.get_settings,
+            "update_settings" : self.update_settings
         }
         self.tailed_file_ptrs = {}
         self.listeners = {}
@@ -70,8 +70,10 @@ class WebTail(object):
                 out = ""
                 for websock in self.listeners:
                     user = self.listeners[websock]["user"]
-                    if fullpath in self.config[user]["monitored_files"]:
-                        # file is in user's set of files to monitor
+                    mconf = self.config[user]["monitored_files"]
+                    if fullpath in mconf and not mconf[fullpath]["muted"]:
+                        # file is in user's set of files to monitor and is not
+                        # marked as muted
                         try:
                             info['l'] = lines
                             out = json.dumps(info)
@@ -111,28 +113,32 @@ class WebTail(object):
         self.tailed_file_ptrs[fullpath] = filep
         return filep
 
-    def update_files_to_monitor(self, user):
+    def update_files_to_monitor(self, user, newclient):
         """ read user file monitor prefs and update monitoring paths if required """
         if user not in self.config:
-            self.config[user] = {
-                "monitored_files":{}
-            }
-        user_watched_files = self.config[user]["monitored_files"]
+            self.config[user] = {}
+        user_config = self.config[user]
+        if "monitored_files" not in user_config:
+            user_config["monitored_files"] = {}
+        if "regexes" not in user_config:
+            user_config["regexes"] = []
+        user_watched_files = user_config["monitored_files"]
         # L.info("==============")
         # L.info(user_watched_files)
         resave_config = False
         for filepath in user_watched_files:
-            if filepath in self.path_filter:
-                L.info(filepath + ": file already being monitored")
-                self.path_filter[filepath] += 1 # reference couting
+            if filepath in self.path_filter and newclient:
+                L.info(filepath + ": file already being monitored by another client")
+                self.path_filter[filepath] += 1 # increase reference count
                 continue
 
             if not self.get_fp(filepath):
                 L.error("Bad file path for:"+filepath)
-                user_watched_files[filepath] = 0
+                user_watched_files[filepath]['follow'] = 0
                 resave_config = True
                 continue
 
+            # First subscription to monitor this file
             self.path_filter[filepath] = 1
 
         if resave_config:
@@ -149,7 +155,7 @@ class WebTail(object):
         L.info("received new client")
         self.listeners[client] = {"user": user}
         # new user means possibly more directories and files to monitor
-        self.update_files_to_monitor(user)
+        self.update_files_to_monitor(user, True)
         return True
 
     def new_message(self, user, client, message):
@@ -208,24 +214,32 @@ class WebTail(object):
         L.info("webtail - client closed")
 
     #-------------------------
-    def monitor_files(self, user, packet):
+    def update_settings(self, user, packet):
         """ update the set of files monitored by user """
         if "files" not in packet:
             return {"status":"error", "msg":"no files given"}
 
+        if "regexes" not in packet:
+            return {"status":"error", "msg":"no regexes given"}
+
         self.config[user]["monitored_files"] = packet['files']
         # The following can modify self.config[user]["monitored_files"]
         # if bad directories are included in that dictionary
-        self.update_files_to_monitor(user)
+        self.update_files_to_monitor(user, False)
+
+        self.config[user]["regexes"] = packet['regexes']
+
         self.save_config()
 
         return {
             "status":"ok",
-            "monitored":self.config[user]["monitored_files"]
+            "monitored":self.config[user]["monitored_files"],
+            "regexes":self.config[user]["regexes"]
         }
 
-    def get_monitored_files(self, user, packet):
+    def get_settings(self, user, packet):
         """ get the set of files user is currently monitoring """
         mfiles = self.config[user]["monitored_files"]
-        reply = {"status":"ok", "files":mfiles}
+        regexs = self.config[user]["regexes"]
+        reply = {"status":"ok", "files":mfiles, "regexes":regexs}
         return reply

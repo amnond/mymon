@@ -18,12 +18,15 @@
 
 <script>
 var constMonitored = "webtail:monitored_files";
+var constRegexes = "webtail:regexes";
 var constSingleWSock = "webtail:wsock_exists";
 
 var g_files = null;
+var g_regexes = null;
 
 $(document).ready(function() {
     g_files =  UI.get_global(constMonitored);
+    g_regexes =  UI.get_global(constRegexes);
     adjustLogWindowSize();
 });
 
@@ -69,54 +72,125 @@ function write_line(packet)
         stream.scrollTop = stream.scrollHeight;
 }
 
+
+function updateTable()
+{
+    console.log("in updateTable");
+    var files = getFilesFromTable();
+    var html = getFilesHTML(files);
+    $('#idFilesDiv').html(html);
+    $('#idMonitoredTable').editableTableWidget();
+    $('#idMonitoredTable td').on('change', function(evt, newValue) {
+        updateTable()
+    });
+
+    var regexes = getRegexFromTable();
+    html = getRegexHTML(regexes);
+    $('#idRegexDiv').html(html);
+    $('#idRegexTable').editableTableWidget();
+    $('#idRegexTable td').on('change', function(evt, newValue) {
+        updateTable()
+    });
+}
+
+function getRegexFromTable()
+{
+    var rows = [];
+    var table = document.getElementById('idRegexTable');
+
+    var rowLength = table.rows.length;
+
+    for (var i=1; i<rowLength; i+=1) {
+        var row = table.rows[i];
+        var pattern = row.cells[0].textContent;
+        var colour = row.cells[1].textContent;
+        if (pattern.trim() == '' || color.trim() == '') {
+            continue;
+        }
+        rows.push( {pattern:pattern, colour:colour} );
+    }
+    return rows;
+}
+
 var TDH = '<td class="wall">&nbsp;</td>' // just for height
 var TDHB = '<td class="wall"><i class="fa fa-frown-o"></i></td>' // just for height
 
+function getRegexHTML(regexes)
+{
+    // Build html table according to contents of regexes
+    var colors = [ '#dbe5f7', '#f8edff' ];
+    var m = 1;
+    var html = '<table id="idRegexTable" class="table">';
+    html += '<thead><tr>';
+    html += '<th>Regex (click to edit/add)</th><th>Color</th><th></th>';
+    html += '</tr></thead>';
+    html += '<tbody>';
+    for (var i=0; i<regexes.length; i++) {
+        var rgx = regexes[i];
+        m = 1 - m;
+        html += '<tr>';
+        html += '<td style="background-color:'+colors[m]+'">'+ rgx.pattern +'</td>';
+        html += '<td style="background-color:'+colors[m]+'">'+ rgx.colour +'</td>';
+        html += TDH;
+        html += '</tr>';
+    }
+    m = 1 - m;
+    html += '<tr>';
+    html += '<td style="background-color:'+colors[m]+'"></td>';
+    html += '<td style="background-color:'+colors[m]+'"></td>';
+    html += TDH;
+    html += '</tr>';
+    html += '</tbody>';
+    html += '</table>';
+    return html;
+}
+
 function getFilesFromTable()
 {
-    var table_files = $("#idMonitored td").not(".wall");
-    files = {};
+    var table_files = $("#idMonitoredTable td").not(".wall");
+    var files = {};
     for (var i=0; i<table_files.length; i++) {
+        var td = table_files[i];
+        var follow = $(td).next().find('input')[0].checked;
         var file = $.trim(table_files[i].textContent);
         if (file != "") {
-            files[file] = 1;
+            files[file] = {follow:1, muted:!follow};
         }
     }
     return files;
 }
 
-function updateTable()
-{
-    var files = getFilesFromTable();
-    var html = getTableHTML(files);
-    $('#idFilesTable').html(html);
-    $('#idMonitored').editableTableWidget();
-    $('#idMonitored td').on('change', function(evt, newValue) {
-        updateTable()
-    });
-    g_files = files;
-}
-
-function getTableHTML(files)
+function getFilesHTML(files)
 {
     // Build html table according to contents of g_files
     var colors = [ '#dbe5f7', '#f8edff' ];
     var m = 1;
-    var html = '<table id="idMonitored" class="table">';
-    html += '<thead><tr><th>Remote files to monitor (click to edit/add)</th><th></th></tr></thead>';
+    var html = '<table id="idMonitoredTable" class="table">';
+    html += '<thead><tr><th>Remote files to monitor (click to edit/add)</th>';
+    html += '<th>Follow</th>';
+    html += '<th></th></tr></thead>';
     html += '<tbody>';
     for (var file in files) {
         m = 1 - m;
         html += '<tr><td style="background-color:'+colors[m]+'">'+ file +'</td>';
         var td = TDH;
-        if (files[file] == 0) {
+        if (files[file].follow == 0) {
             // Server marked this as a bad directory
             td = TDHB;
         }
+        var checked = 'checked';
+        if ( files[file].muted ) {
+            checked = '';
+        }
+        html += '<td style="background-color:'+colors[m]+'" class="wall">';
+        html += '<input type="checkbox" '+ checked +' /></td>' + TDH;
         html += td + '</tr>';
     }
     m = 1 - m;
-    html += '<tr><td style="background-color:'+colors[m]+'"></td>'+ TDH +'</tr>';
+    html += '<tr><td style="background-color:'+colors[m]+'"></td>'
+    html += '<td style="background-color:'+colors[m]+'" class="wall">';
+    html += '<input type="checkbox" /></td>' + TDH;
+    html += '</tr>';
     html += '</tbody>';
     html += '</table>';
     return html;
@@ -124,17 +198,40 @@ function getTableHTML(files)
 
 function showSettingsModal()
 {
-    var html = '<div id="idFilesTable">';
-    html += getTableHTML(g_files);
+    var html = '<div id="idWebtailSettings" style="width:100%; ';
+    html += ' overflow-y:auto;" >';
+    html += '<div id="idFilesDiv">';
+    html += getFilesHTML(g_files);
+    html += '</div>';
+    html += '<div id="idRegexDiv">';
+    html += getRegexHTML(g_regexes);
+    html += '</div>';
     html += '</div>';
     showBSModal({
         title: "WebTail Settings",
         body: html,
-        onShow: function() {
-            $('#idMonitored').editableTableWidget();
-            $('#idMonitored td').on('change', function(evt, newValue) {
-                updateTable()
+        onShow: function(e) {
+            // Make the file monitor table editable
+            $('#idMonitoredTable').editableTableWidget();
+            $('#idMonitoredTable td').on('change', function(evt, newValue) {
+                updateTable();
             });
+
+            // Make the regex pattern table editable
+            $('#idRegexTable').editableTableWidget();
+            $('#idRegexTable td').on('change', function(evt, newValue) {
+                updateTable();
+            });
+
+            var mbody = $(e.target).find('.modal-body');
+            var target_height = Math.floor($(window).height() * 0.7)
+            var header = $(e.target).find('.modal-header');
+            var footer = $(e.target).find('.modal-footer');
+            var mbody_new_height = target_height - header.height() - footer.height()
+            var propsdiv = $('#idWebtailSettings');
+            var propsdiv_new_height = mbody_new_height;
+            mbody.height(mbody_new_height);
+            propsdiv.height(propsdiv_new_height);
         },
         size: "large",
         actions: [{
@@ -148,7 +245,9 @@ function showSettingsModal()
             cssClass: 'btn-success',
             onClick: function(e){
                 $(e.target).parents('.modal').modal('hide');
-                set_monitored_files();
+                var files = getFilesFromTable();
+                var regexes = getRegexFromTable()
+                send_settings(files, regexes);
             }
         }]
     });
@@ -156,26 +255,35 @@ function showSettingsModal()
 }
 
 var g_handle_replies = {
-    "monitor_files" : function(packet) {
+    "update_settings" : function(packet) {
         g_files = packet.monitored;
+        g_regexes = packet.regexes;
         UI.set_global(constMonitored, g_files); // in case user leaves view
+        UI.set_global(constRegexes, g_regexes); // in case user leaves view
     },
-    "get_monitored_files" : function(packet) {
+    "get_settings" : function(packet) {
         if (!('files' in packet)) {
             console.log("no 'files' in packet")
             return;
         }
+        if (!('regexes' in packet)) {
+            console.log("no 'regexes' in packet")
+            return;
+        }
         g_files = packet.files;
+        g_regexes = packet.regexes;
         UI.set_global(constMonitored, g_files); // in case user leaves view
+        UI.set_global(constRegexes, g_regexes); // in case user leaves view
     }
 }
 
 
-function set_monitored_files() {
+function send_settings(files, regexes) {
 
     var req = {
-        "request": "monitor_files",
-        "files": g_files
+        "request": "update_settings",
+        "files": files,
+        "regexes": regexes
     }
 
     conn.send(JSON.stringify(req));
@@ -189,7 +297,7 @@ var conn = {
         }
 
         var req = {
-            "request": "get_monitored_files"
+            "request": "get_settings"
         }
 
         conn.send(JSON.stringify(req));
