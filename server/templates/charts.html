@@ -252,6 +252,32 @@ Getting memory...
     };
     //--------------------------------------------------------------------------
 
+    function onChangeProcMemGraph(range) {
+        if (!range.byUser) {
+            return;
+        }
+
+        graph2d_totalmem.setOptions({
+            start: range.start,
+            end: range.end,
+            //height: '100%',
+        });
+    }
+
+    function onChangeTotalMemGraph(range) {
+        if (!range.byUser) {
+            return;
+        }
+
+        graph2d_procsmem.setOptions({
+            start: range.start,
+            end: range.end,
+            //height: '100%'
+        });
+    }
+
+    //--------------------------------------------------------------------------
+
     function str2color(str) {
         var hexstr = crc32(str).toString(16).substr(0,6)
         var pad = '000000'
@@ -308,6 +334,7 @@ Getting memory...
             defaultGroup: '',
             legend: true,
             height: '290px',
+            zoomMin: 3600000,
             dataAxis: {
                 left: {
                     title:  {
@@ -327,6 +354,7 @@ Getting memory...
 
         var tlmem_container = document.getElementById('total_memchart');
         graph2d_totalmem = new vis.Graph2d(tlmem_container, items, procs_groups, options);
+        graph2d_totalmem.on('rangechange', onChangeTotalMemGraph);
     }
 
     function displayProcsMem(processes, start_time, memorder)
@@ -373,6 +401,7 @@ Getting memory...
         var dataset = new vis.DataSet(items);
         var options = {
             height: '290px',
+            zoomMin: 3600000,
             dataAxis: {
                 left: {
                     title:  {
@@ -391,6 +420,7 @@ Getting memory...
         };
 
         graph2d_procsmem = new vis.Graph2d(procs_container, items, procs_groups, options);
+        graph2d_procsmem.on('rangechange', onChangeProcMemGraph);
 
         populateExternalLegend(memorder);
     }
