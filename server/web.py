@@ -8,12 +8,16 @@ import time
 import json
 import distutils
 from distutils import dir_util
+import inspect
 import zlib
 import tornado.httpserver
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
 import tornado.options
+
+import loadmodule
+from mmplugin import MymonPlugin
 
 #--------------------------------------------
 # TODO: Should be read from plugin directory
@@ -43,6 +47,28 @@ def copy_plugins_client_files():
                 dst = os.path.join(static_dir, pdir)
                 distutils.dir_util.copy_tree(htmlpath, dst)
 
+def load_plugins():
+    ''' Dynamically load and initialize all the Mymon plugins '''
+    plugins = []
+    currdir = os.path.dirname(__file__)
+    plugins_dir = os.path.join(currdir, 'plugins')
+    dirs = [x for x in os.listdir(plugins_dir) \
+              if os.path.isdir(plugins_dir+os.sep+x)]
+    for dirname in dirs:
+        subdir = os.path.join(plugins_dir, dirname)
+        files = [x for x in os.listdir(subdir) \
+                   if os.path.isfile(os.path.join(subdir, x)) and x.endswith(".py")]
+        for filename in files:
+            plugin_candidate = os.path.join(subdir, filename)
+            plugin_module = loadmodule.load_module(plugin_candidate)
+            plugin_classes = inspect.getmembers(plugin_module, inspect.isclass)
+            for plugin_class in plugin_classes:
+                pcls = plugin_class[1]
+                if issubclass(pcls, MymonPlugin):
+                    ipcls = pcls()
+                    plugins.append(ipcls)
+                    ipcls.method1()
+    return plugins
 
 class BaseHandler(tornado.web.RequestHandler):
     """ Tornado Base """
@@ -246,6 +272,7 @@ class Web(object):
         self.port = 8888
         self.proc_timer = None
         self.tail_timer = None
+        self.plugins = None
         self.sinterval = 15 * 60 * 1000
 
     def set_config(self, conf):
@@ -260,7 +287,7 @@ class Web(object):
         """ The Tornado event loop """
 
         copy_plugins_client_files()
-
+        self.plugins = load_plugins()
         #------------------------------------------------
         # TODO: Should be activated from plugin directory
         webtail = WebTail()
@@ -268,7 +295,7 @@ class Web(object):
         #------------------------------------------------
 
         #------------------------------------------------
-        # TODO: Should be timer service per plugon
+        # TODO: Should be timer service per plugin
         self.tail_timer = tornado.ioloop.PeriodicCallback(webtail.follow, 1000)
         self.tail_timer.start()
 
