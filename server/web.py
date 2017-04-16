@@ -6,6 +6,8 @@ The web service implemented via Tornado
 import os.path
 import time
 import json
+import distutils
+from distutils import dir_util
 import zlib
 import tornado.httpserver
 import tornado.ioloop
@@ -24,6 +26,22 @@ from reqhandler import RH
 from logger import L
 
 # http://guillaumevincent.com/2013/02/12/Basic-authentication-on-Tornado-with-a-decorator.html
+
+def copy_plugins_client_files():
+    ''' copy all plugins html resources to the tornado static resources directory '''
+    currdir = os.path.dirname(__file__)
+    plugins_dir = os.path.join(currdir, 'plugins')
+    static_dir = os.path.join(currdir, 'static', 'plugins')
+    dirlist = os.listdir(plugins_dir)
+    for pdir in dirlist:
+        plg_path = os.path.join(plugins_dir, pdir)
+        if os.path.isdir(plg_path):
+            # Plugin directory. Check if it has client resource
+            htmlpath = os.path.join(plg_path, 'html')
+            if os.path.isdir(htmlpath):
+                # plugin has html resources. Copy them to tordado static directory
+                dst = os.path.join(static_dir, pdir)
+                distutils.dir_util.copy_tree(htmlpath, dst)
 
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -240,6 +258,9 @@ class Web(object):
 
     def ioloop(self):
         """ The Tornado event loop """
+
+        copy_plugins_client_files()
+
         #------------------------------------------------
         # TODO: Should be activated from plugin directory
         webtail = WebTail()
