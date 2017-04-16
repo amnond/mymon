@@ -20,7 +20,7 @@ for dirname in dirs:
     plugin_classes = inspect.getmembers(plugin_module, inspect.isclass)
     for plugin_class in plugin_classes:
     	pcls = plugin_class[1]
-        if issubclass(pcls, pluginclass.pluginclass):
+    	if issubclass(pcls, pluginclass.pluginclass):
             cls = pcls()
             cls.method1()
             cls.method2()
