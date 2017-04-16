@@ -83,9 +83,9 @@ class _DB(object):
                 else:
                     self.name2code[name] = code
 
-        except lite.Error, err:
-            err = "Error %s:" % err.args[0]
-            L.error(err)
+        except lite.Error as err:
+            error = "Error %s:" % err.args[0]
+            L.error(error)
             sys.exit(1)
 
     def close(self):
