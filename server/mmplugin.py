@@ -9,7 +9,7 @@ class MymonPlugin(object):
     '''
     def get_ui_name(self):
         ''' Return the name of the plugin as it should appear in the Web UI '''
-        pass
+        return "noname"
 
     def get_ui_icon_html(self):
         '''  Return the html code that generates an icon which represents this plugin '''

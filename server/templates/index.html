@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-
+<!-- 
+    This is the index.html template, rendered via web.py from which two parameters
+    are also passed: host, which contains the hostname of this server as it appears
+    to the client, and plugins, which is the array of interfaces to the runtime
+    plugins that were loaded.
+-->
 <head>
 
     <meta charset="utf-8">
@@ -31,11 +36,14 @@
     <![endif]-->
 
 
-   <!-- TODO: for all the css files below and their corresponding js files,
-        iterate here on server side (i.e Python Tornado scriptingI) and get them
-        from the directory of the appropriate plugin.
-        Later versions can enable downloading and installing mymon
-        plugins from the UI
+   <!--
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+       TODO: for all the css files below and their corresponding js files,
+       iterate here on server side (i.e Python Tornado scriptingI) and get them
+       from the directory of the appropriate plugin.
+       Later versions can enable downloading and installing mymon
+       plugins from the UI
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
     -->
 
     <!-- Page specific css from here on -->
@@ -94,8 +102,12 @@
             <div class="navbar-default sidebar frame" role="navigation">
                 <div class="sidebar-nav navbar-collapse">
                     <ul class="nav" id="side-menu">
-                        <!-- TODO: This should be rendered via tornado templating according to
-                                   available plugins -->
+                        <!--
+                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+                            TODO: This should be rendered via tornado templating according to
+                                   available plugins
+                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+                        -->
                         <li>
                             <a onClick="load('dashboard')"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
                         </li>
@@ -105,6 +117,13 @@
                         <li>
                             <a onClick="load('webtail')"><i class="fa fa-file-text-o fa-fw"></i> WebTail</a>
                         </li>
+                        {% 
+                             for plugin in plugins
+                        %}
+                        <li>
+                            <a onClick=""><i class="fa fa-bus fa-fw"></i>{{ plugin.get_ui_name() }}</a>
+                        </li>
+                        {% end %}
                     </ul>
                 </div>
                 <!-- /.sidebar-collapse -->
@@ -176,11 +195,14 @@
          (https://startbootstrap.com/template-overviews/sb-admin-2/ License:MIT) -->
     <script src="/res/js/sb-admin-2.js"></script>
 
-   <!-- TODO: for all the JS libraries below and their corresponding CSS files,
-        iterate here on server side (i.e Python Tornado scriptingI) and get them
+   <!--
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
+        TODO: for all the JS libraries below and their corresponding CSS files,
+        iterate here on server side (i.e Python Tornado scripting) and get them
         from the directory of the appropriate plugin.
         Later versions can enable downloading downloading and installing mymon
         plugins from the UI
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
     -->
     <script src="/res/js/bootstrap.modal.wrapper.js"></script>
 

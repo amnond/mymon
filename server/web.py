@@ -64,10 +64,10 @@ def load_plugins():
             plugin_classes = inspect.getmembers(plugin_module, inspect.isclass)
             for plugin_class in plugin_classes:
                 pcls = plugin_class[1]
-                if issubclass(pcls, MymonPlugin):
+                modname, extname = os.path.splitext(filename)
+                if issubclass(pcls, MymonPlugin) and pcls.__module__ == modname:
                     ipcls = pcls()
                     plugins.append(ipcls)
-                    ipcls.method1()
     return plugins
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -77,10 +77,16 @@ class BaseHandler(tornado.web.RequestHandler):
 
 class MainHandler(BaseHandler):
     """ Tornado Main """
+    def initialize(self, app):
+        ''' remember who the web app is '''
+        L.info("initializing MainHandler")
+        self.app = app
+
     @tornado.web.authenticated
     def get(self):
         host = self.request.host
-        self.render('index.html', host=host)
+        # Authenticated. Render index.html template and pass the host and plugins
+        self.render('index.html', host=host, plugins=self.app.plugins)
 
 class PageHandler(BaseHandler):
     """ Tornado Specific page """
@@ -209,9 +215,12 @@ class Application(tornado.web.Application):
 
         settings['compress_response'] = True
 
+        copy_plugins_client_files()
+        self.plugins = load_plugins()
+
         tornado.web.Application.__init__(self, [
             tornado.web.url(r"/(favicon\.ico)", tornado.web.StaticFileHandler),
-            tornado.web.url(r"/", MainHandler, name="main"),
+            tornado.web.url(r"/", MainHandler, dict(app=self), name="main"),
             tornado.web.url(r"/(.*\.html)", PageHandler, name="mymon"),
             tornado.web.url(r'/login', LoginHandler, name="login"),
             tornado.web.url(r'/logout', LogoutHandler, name="logout"),
@@ -272,7 +281,6 @@ class Web(object):
         self.port = 8888
         self.proc_timer = None
         self.tail_timer = None
-        self.plugins = None
         self.sinterval = 15 * 60 * 1000
 
     def set_config(self, conf):
@@ -285,9 +293,7 @@ class Web(object):
 
     def ioloop(self):
         """ The Tornado event loop """
-
-        copy_plugins_client_files()
-        self.plugins = load_plugins()
+        
         #------------------------------------------------
         # TODO: Should be activated from plugin directory
         webtail = WebTail()
