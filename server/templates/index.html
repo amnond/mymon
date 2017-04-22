@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- 
+<!--
     This is the index.html template, rendered via web.py from which two parameters
     are also passed: host, which contains the hostname of this server as it appears
     to the client, and plugins, which is the array of interfaces to the runtime
@@ -37,13 +37,13 @@
 
 
    <!--
-       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
        TODO: for all the css files below and their corresponding js files,
        iterate here on server side (i.e Python Tornado scriptingI) and get them
        from the directory of the appropriate plugin.
        Later versions can enable downloading and installing mymon
        plugins from the UI
-       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     -->
 
     <!-- Page specific css from here on -->
@@ -103,10 +103,10 @@
                 <div class="sidebar-nav navbar-collapse">
                     <ul class="nav" id="side-menu">
                         <!--
-                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             TODO: This should be rendered via tornado templating according to
                                    available plugins
-                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                         -->
                         <li>
                             <a onClick="load('dashboard')"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
@@ -117,7 +117,7 @@
                         <li>
                             <a onClick="load('webtail')"><i class="fa fa-file-text-o fa-fw"></i> WebTail</a>
                         </li>
-                        {% 
+                        {%
                              for plugin in plugins
                         %}
                         <li>
@@ -188,6 +188,9 @@
     <!-- Metis Menu Plugin JavaScript (https://github.com/onokumus/metismenu License:MIT) -->
     <script src="/res/js/metisMenu.min.js"></script>
 
+    <!-- Client framework functions -->
+    <script src="/res/js/client-framework.js"></script>
+
     <!-- Javascript utility functions -->
     <script src="/res/js/utils.js"></script>
 
@@ -196,13 +199,13 @@
     <script src="/res/js/sb-admin-2.js"></script>
 
    <!--
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         TODO: for all the JS libraries below and their corresponding CSS files,
         iterate here on server side (i.e Python Tornado scripting) and get them
         from the directory of the appropriate plugin.
         Later versions can enable downloading downloading and installing mymon
         plugins from the UI
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     -->
     <script src="/res/js/bootstrap.modal.wrapper.js"></script>
 
@@ -223,154 +226,13 @@
 
         var g_wait_dialog;
 
-        function  show_wait() {
-            //console.log("show...")
-            $('#waitmodal').modal('show')
-            /*
-            g_wait_dialog = bootbox.dialog({
-                title: 'Fetching data...',
-                message: '<p><i class="fa fa-spin fa-spinner"></i> Loading...</p>'
-            });
-            */
-        }
-
-        function hide_wait() {
-            //console.log("hide...")
-            $('#waitmodal').modal('hide')
-            /*
-            g_wait_dialog.modal('hide');
-            */
-        }
-
         // Interface for various views loaded into #pageview
-        var UI = {
-            del_global: function(key) {
-                if (key in g_globals) {
-                    delete g_globals[key];
-                    return true;
-                }
-                return false;
-            },
-            get_global: function(key) { return (key in g_globals) ? g_globals[key] : null },
-            set_global: function(key, val) { g_globals[key] = val; },
-            postRequestSilent: function( jsonData, callback ) {
-                _postRequest(jsonData, callback);
-            },
-            postRequest: function( jsonData, callback ) {
-                show_wait()
-                _postRequest(jsonData, function(data) {
-                    hide_wait()
-                    if (typeof(callback)=='function') {
-                        callback(data);
-                    }
-                });
-            },
-            show_wait_modal: function() {
-                show_wait();
-            },
-            hide_wait_modal: function() {
-                hide_wait();
-            },
-            request_connection: function(service, conn) {
-                var inservice = false;
-
-                if (typeof(conn) != "object") {
-                    console.log("Error: connection parameter has to be an object")
-                    return;
-                }
-
-                conn.send = function(data) {
-                    console.log('attempting to send on invalid connection');
-                }
-
-                if ("MozWebSocket" in window) {
-                    WebSocket = MozWebSocket;
-                }
-
-                if (WebSocket) {
-                    var req = {service:service}
-                    var sreq = JSON.stringify(req);
-                    var ws = new WebSocket("ws://{{ host }}/websock/");
-                    conn.close = function() {
-                        ws.onclose = function () {}; // disable onclose handler first
-                        ws.close()
-                    }
-                    ws.onopen = function () { ws.send(sreq) };
-                    ws.onmessage = function(evt) {
-                        //console.log(evt);
-                        var data = evt.data;
-                        if (!inservice) {
-                            var stat = 'error'
-                            var response = {};
-                            try {
-                                response = JSON.parse(data);
-                                stat = response.status;
-                                if (response.service == service && stat == 'ok') {
-                                    inservice = true;
-                                    conn.send = function(data) {
-                                        // connect the send method directly to the websocket send
-                                        ws.send(data);
-                                    }
-                                }
-                            }
-                            catch (e) {
-                                console.log(e);
-                            }
-                            if (!('onConnectAck' in conn)) {
-                                console.log('Error: connection has no onConnectAck method');
-                                return;
-                            }
-
-                            conn.onConnectAck(stat)
-                            return;
-                        }
-                        if (!('onData' in conn)) {
-                            console.log('Error: connection has no onData method');
-                            return;
-                        }
-                        conn.onData(data);
-                    }
-                    ws.onclose = function () {
-                        if (inservice) {
-                            if (!('onClose' in conn)) {
-                                console.log('Error: connection has no onClose method');
-                                return;
-                            }
-                            conn.onClose();
-                        }
-                        console.log("websock closed")
-                    };
-                }
-                else {
-                    console.log("WebSocket not supported");
-                }
-            }
-        }
-
-        function  _postRequest( jsonData, callback )
-        {
-            var url = '/ajax'
-            var jsonStr = JSON.stringify( jsonData );
-            $('#idreq').val( jsonStr );
-            $.post( url,
-                    $('#reqform').serialize(),
-                    callback,
-                    //"application/json" );
-                    "text" );
-        }
+        var UI = get_framework({
+            ws_url : "ws://{{ host }}/websock/"
+        });
 
         function load(page) {
-            if ('on_view_unloading' in window &&
-                typeof window.on_view_unloading == 'function' ) {
-                on_view_unloading();
-                delete window.on_view_unloading;
-            }
-            $( '#pageview' ).hide();   // hide current page view
-            $( '#loading' ).show()     // show animation until new page is received
-            $( "#pageview" ).load( "/"+page+".html", function() {  // request relevant page
-                $( '#loading' ).hide()   // when received, hide wait animation
-                $( '#pageview' ).show(); // and show newly arrive page
-            });
+            UI.load(page);
         }
 
         $(document).ready(function() {
