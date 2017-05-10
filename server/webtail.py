@@ -203,12 +203,13 @@ class WebTail(object):
         user = info['user']
         user_watched_files = self.config[user]["monitored_files"]
         for filepath in user_watched_files:
-            self.path_filter[filepath] -= 1
-            if self.path_filter[filepath] == 0:
-                L.info("reference count 0 for file "+filepath)
-                self.tailed_file_ptrs[filepath].close()
-                del self.tailed_file_ptrs[filepath]
-                del self.path_filter[filepath]
+            if user_watched_files[filepath]["follow"]:
+                self.path_filter[filepath] -= 1
+                if self.path_filter[filepath] == 0:
+                    L.info("reference count 0 for file "+filepath)
+                    self.tailed_file_ptrs[filepath].close()
+                    del self.tailed_file_ptrs[filepath]
+                    del self.path_filter[filepath]
 
         del self.listeners[client]
         L.info("webtail - client closed")
