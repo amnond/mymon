@@ -227,11 +227,13 @@ function getFilesHTML(files)
         m = 1 - m;
         html += '<tr><td style="background-color:'+colors[m]+'">'+ file +'</td>';
         var td = TDH;
+        var checked = 'checked';
         if (files[file].follow == 0) {
             // Server marked this as a bad directory
             td = TDHB;
+            // if it can't be followed, remove the follow checkmark
+            checked = '';
         }
-        var checked = 'checked';
         if ( files[file].muted ) {
             checked = '';
         }

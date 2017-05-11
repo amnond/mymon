@@ -1,3 +1,4 @@
-* Add debug mode and in it use watchdog to copy plugin html files whenever they are changed.
-* WebTail - Remove follow checkmark in UI if file can't be followed (e.g does not exist).
 * Implement sysmon and webtail as plugins
+* Add debug mode and in it use watchdog to copy plugin html files whenever they are changed.
+* Install on Linux from scratch and add installation instructions
+* Productize - Web page, Create python setup, Licensing
