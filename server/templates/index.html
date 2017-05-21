@@ -121,7 +121,10 @@
                              for plugin in plugins
                         %}
                         <li>
-                            <a onClick=""><i class="fa fa-bus fa-fw"></i>{{ plugin.get_ui_name() }}</a>
+                            <a onClick="load('{{ plugin.dir }}/{{ plugin.get_page_name() }}')">
+                                {% raw plugin.get_ui_icon_html() %}
+                                {{ plugin.get_ui_name() }}
+                            </a>
                         </li>
                         {% end %}
                     </ul>

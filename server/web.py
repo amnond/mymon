@@ -36,16 +36,23 @@ def copy_plugins_client_files():
     currdir = os.path.dirname(__file__)
     plugins_dir = os.path.join(currdir, 'plugins')
     static_dir = os.path.join(currdir, 'static', 'plugins')
+    templates_dir = os.path.join(currdir, 'templates', 'plugins')
     dirlist = os.listdir(plugins_dir)
     for pdir in dirlist:
         plg_path = os.path.join(plugins_dir, pdir)
         if os.path.isdir(plg_path):
             # Plugin directory. Check if it has client resource
-            htmlpath = os.path.join(plg_path, 'html')
-            if os.path.isdir(htmlpath):
+            static_path = os.path.join(plg_path, 'static')
+            if os.path.isdir(static_path):
                 # plugin has html resources. Copy them to tordado static directory
                 dst = os.path.join(static_dir, pdir)
-                distutils.dir_util.copy_tree(htmlpath, dst)
+                distutils.dir_util.copy_tree(static_path, dst)
+            templates_path = os.path.join(plg_path, 'templates')
+            if os.path.isdir(templates_path):
+                # plugin has html resources. Copy them to tordado static directory
+                dst = os.path.join(templates_dir, pdir)
+                distutils.dir_util.copy_tree(templates_path, dst)
+
 
 def load_plugins():
     ''' Dynamically load and initialize all the Mymon plugins '''
@@ -67,6 +74,7 @@ def load_plugins():
                 modname, extname = os.path.splitext(filename)
                 if issubclass(pcls, MymonPlugin) and pcls.__module__ == modname:
                     ipcls = pcls()
+                    ipcls.dir = subdir
                     plugins.append(ipcls)
     return plugins
 
