@@ -7,6 +7,14 @@ class MymonPlugin(object):
     An abstract Mymon plugin class. This should be subclassed in order to
     implement a Mymon plugin
     '''
+    def start(self, reqhandler, logger, timer):
+        '''  initialize this plugin '''
+        pass
+
+    def stop(self):
+        ''' release resources and stop this plugin '''
+        pass
+
     def get_ui_icon_html(self):
         '''  Return the html code that generates an icon which represents this plugin '''
         pass

@@ -1,6 +1,14 @@
 from mmplugin import MymonPlugin
 
 class MyOtherPlugin(MymonPlugin):
+    def start(self, reqhandler, logger, timer):
+        '''  initialize and start this plugin '''
+        pass
+
+    def stop(self):
+        ''' release resources and stop this plugin '''
+        pass
+
     def get_ui_icon_html(self):
         ''' return the raw html for the plugin icon '''
         return '<i class="fa fa-pencil fa-fw"></i>'

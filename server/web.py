@@ -49,7 +49,7 @@ def copy_plugins_client_files():
                 distutils.dir_util.copy_tree(static_path, dst)
             templates_path = os.path.join(plg_path, 'templates')
             if os.path.isdir(templates_path):
-                # plugin has html resources. Copy them to tordado static directory
+                # plugin has html templates. Copy them to tordado template directory
                 dst = os.path.join(templates_dir, pdir)
                 distutils.dir_util.copy_tree(templates_path, dst)
 
@@ -236,6 +236,10 @@ class Application(tornado.web.Application):
             tornado.web.url(r"/websock/", WebsockHandler, dict(app=self), name="websock"),
         ], **settings)
 
+    def init_plugins(self):
+        for plugin in self.plugins:
+            plugin.start(RH, L, tornado.ioloop.PeriodicCallback)
+
     def on_open_websock(self, client, user):
         """ new websoock has connected """
         self.listeners.append(client)
@@ -301,7 +305,7 @@ class Web(object):
 
     def ioloop(self):
         """ The Tornado event loop """
-        
+
         #------------------------------------------------
         # TODO: Should be activated from plugin directory
         webtail = WebTail()
@@ -316,6 +320,9 @@ class Web(object):
         self.proc_timer = tornado.ioloop.PeriodicCallback(procmon.monitor, self.sinterval)
         self.proc_timer.start()
         #------------------------------------------------
+
+        app = Application()
+        app.init_plugins()
 
         Application().listen(self.port)
         tornado.ioloop.IOLoop.instance().start()

@@ -31,6 +31,7 @@ class _RequestHandler(object):
             L.error("Error: request:" + request + " is already registered")
             return False
         self.ajax_handlers[request] = function
+        L.info("registered:"+request)
         return True
 
     def ajax_request(self, user, packet):
