@@ -1,10 +1,44 @@
-""" Process monitor: scans processes and sends status to database """
-import time
-import json
+from mmplugin import MymonPlugin
 
 from reqhandler import RH
 from logger import L
 import jsonfile
+
+""" Process monitor: scans processes and sends status to database """
+import time
+import json
+
+
+class WebTailPlugin(MymonPlugin):
+    def __init__(self):
+        self.started = False
+        self.tail_timer = None
+
+    def start(self, reqhandler, logger, timer):
+        if self.started:
+            L.error("WebTail plugin already started")
+            return False
+        webtail = WebTail()
+        self.tail_timer = timer(webtail.follow, 1000)
+        self.tail_timer.start()
+        return True
+
+    def stop(self):
+        ''' release resources and stop this plugin '''
+        pass
+
+    def get_ui_icon_html(self):
+        ''' return the raw html for the plugin icon '''
+        return '<i class="fa fa-files-o fa-fw"></i>'
+
+    def get_ui_name(self):
+        ''' return the plugin name as it should appear next to the icon '''
+        return "WebTail"
+
+    def get_page_name(self):
+        '''  Return the name of the html page that corresponds to this plugin '''
+        return 'webtail'
+
 
 # pylint: disable=W0703
 

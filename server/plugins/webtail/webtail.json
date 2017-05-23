@@ -1,0 +1,1 @@
+{"demo": {"monitored_files": {"/tmp/moo": {"muted": true, "follow": 0}, "/var/log/system.log": {"muted": false, "follow": 1}}, "regexes": []}}

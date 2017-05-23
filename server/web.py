@@ -22,8 +22,8 @@ from mmplugin import MymonPlugin
 #--------------------------------------------
 # TODO: Should be read from plugin directory
 
-from procmon import Procmon
-from webtail import WebTail
+#from procmon import Procmon
+#from webtail import WebTail
 #--------------------------------------------
 
 from reqhandler import RH
@@ -308,17 +308,17 @@ class Web(object):
 
         #------------------------------------------------
         # TODO: Should be activated from plugin directory
-        webtail = WebTail()
-        procmon = Procmon()
+        # webtail = WebTail()
+        # procmon = Procmon()
         #------------------------------------------------
 
         #------------------------------------------------
         # TODO: Should be timer service per plugin
-        self.tail_timer = tornado.ioloop.PeriodicCallback(webtail.follow, 1000)
-        self.tail_timer.start()
+        # self.tail_timer = tornado.ioloop.PeriodicCallback(webtail.follow, 1000)
+        # self.tail_timer.start()
 
-        self.proc_timer = tornado.ioloop.PeriodicCallback(procmon.monitor, self.sinterval)
-        self.proc_timer.start()
+        # self.proc_timer = tornado.ioloop.PeriodicCallback(procmon.monitor, self.sinterval)
+        # self.proc_timer.start()
         #------------------------------------------------
 
         app = Application()

@@ -1,8 +1,8 @@
 from mmplugin import MymonPlugin
 
 class MyPlugin(MymonPlugin):
-    def start(self, timer):
-        ''' initialize and start this plugin '''
+    def start(self, reqhandler, logger, timer):
+        '''  initialize this plugin '''
         pass
 
     def stop(self):
