@@ -19,13 +19,6 @@ import tornado.options
 import loadmodule
 from mmplugin import MymonPlugin
 
-#--------------------------------------------
-# TODO: Should be read from plugin directory
-
-#from procmon import Procmon
-#from webtail import WebTail
-#--------------------------------------------
-
 from reqhandler import RH
 from logger import L
 
@@ -237,6 +230,7 @@ class Application(tornado.web.Application):
         ], **settings)
 
     def init_plugins(self):
+        """ call the start method of all the loaded mymon plugins """
         for plugin in self.plugins:
             plugin.start(RH, L, tornado.ioloop.PeriodicCallback)
 
@@ -305,21 +299,6 @@ class Web(object):
 
     def ioloop(self):
         """ The Tornado event loop """
-
-        #------------------------------------------------
-        # TODO: Should be activated from plugin directory
-        # webtail = WebTail()
-        # procmon = Procmon()
-        #------------------------------------------------
-
-        #------------------------------------------------
-        # TODO: Should be timer service per plugin
-        # self.tail_timer = tornado.ioloop.PeriodicCallback(webtail.follow, 1000)
-        # self.tail_timer.start()
-
-        # self.proc_timer = tornado.ioloop.PeriodicCallback(procmon.monitor, self.sinterval)
-        # self.proc_timer.start()
-        #------------------------------------------------
 
         app = Application()
         app.init_plugins()
