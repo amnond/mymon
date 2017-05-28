@@ -44,7 +44,7 @@ class SysPlugin(MymonPlugin):
 class Procmon(object):
     """ Procmon encapsulates information collection of OS process """
     def __init__(self):
-        self.DB = _DB()        
+        self.DB = _DB()
         RH.register_ajax_handler('mem_log', self.handle_memlog_req)
         RH.register_ajax_handler('curr_mem', self.handle_currmem_req)
         RH.register_dashboard('mem_dashboard', self.dashboard)

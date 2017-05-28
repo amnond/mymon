@@ -1,4 +1,9 @@
-* Implement sysmon and webtail as plugins
-* Add debug mode and in it use watchdog to copy plugin html files whenever they are changed.
-* Install on Linux from scratch and add installation instructions
 * Productize - Web page, Create python setup, Licensing
+    * web site
+    * github
+    * Install on Linux/Mac via package:
+        http://marthall.github.io/blog/how-to-package-a-python-app/
+        http://python-packaging.readthedocs.io/en/latest/
+* authentication module
+* gauges for system dashboard
+* save more system params (e.g. network activity, CPU)
