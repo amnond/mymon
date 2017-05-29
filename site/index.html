@@ -17,6 +17,11 @@
 
     <!-- Custom Fonts -->
     <link href="vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Merriweather:400,300,300italic,400italic,700,700italic,900,900italic' rel='stylesheet' type='text/css'>
+
+    <!-- Plugin CSS -->
+    <link href="vendor/magnific-popup/magnific-popup.css" rel="stylesheet">
 
     <!-- Theme CSS -->
     <link href="css/mymon.css" rel="stylesheet">
@@ -30,34 +35,31 @@
 
 </head>
 
-<body id="page-top" data-spy="scroll" data-target=".navbar-fixed-top">
+<body id="page-top">
 
-    <!-- Navigation -->
-    <nav class="navbar navbar-custom navbar-fixed-top" role="navigation">
-        <div class="container">
+    <nav id="mainNav" class="navbar navbar-default navbar-fixed-top">
+        <div class="container-fluid">
+            <!-- Brand and toggle get grouped for better mobile display -->
             <div class="navbar-header">
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-main-collapse">
-                    Menu <i class="fa fa-bars"></i>
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span> Menu <i class="fa fa-bars"></i>
                 </button>
-
                 <a class="navbar-brand page-scroll" href="#page-top">
                 <img src='img/mymon.png' style='margin-top:-10px; padding:0px; height:45px'></img>
-
                 </a>
             </div>
 
             <!-- Collect the nav links, forms, and other content for toggling -->
-            <div class="collapse navbar-collapse navbar-right navbar-main-collapse">
-                <ul class="nav navbar-nav">
-                    <!-- Hidden li included to remove active class from about link when scrolled up past about section -->
-                    <li class="hidden">
-                        <a href="#page-top"></a>
-                    </li>
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav navbar-right">
                     <li>
                         <a class="page-scroll" href="#about">About</a>
                     </li>
                     <li>
-                        <a class="page-scroll" href="#download">Download</a>
+                        <a class="page-scroll" href="#install">Install</a>
+                    </li>
+                    <li>
+                        <a class="page-scroll" href="#tutorial">Tutorial</a>
                     </li>
                     <li>
                         <a class="page-scroll" href="#license">License</a>
@@ -66,145 +68,141 @@
             </div>
             <!-- /.navbar-collapse -->
         </div>
-        <!-- /.container -->
+        <!-- /.container-fluid -->
     </nav>
 
-    <!-- Intro Header -->
-    <header class="intro">
-        <div class="intro-body">
-            <div class="container">
-                <div class="row">
-                    <div class="col-md-8 col-md-offset-2">
-                        <br />
-                        <br />
-                        <h1 class="brand-heading">Simple, Customisable, Extendible and Free</h1>
-                        <div class="intro-text">
-                            Server monitoring application (resource consumption history, logs, etc.).
-                            <br />
-                            <br />
-                            Framework for rapid development of monitoring apps or full web apps.
-                            <br />
-                            <br />
-                            Based on <a href='https://www.python.org/'>Python</a> (2 or 3) + <a href='http://www.tornadoweb.org/en/stable/'>Tornado</a>.
-                            <br />
-                            <br />
-                        </div>
-                        <br />
-                        <h5>Scroll down to read more &amp; install...</h5>
-                        <a href="#about" class="btn btn-circle page-scroll">
-                            <i class="fa fa-angle-double-down animated"></i>
-                        </a>
-                    </div>
+    <header>
+        <div class="header-content">
+            <div class="header-content-inner">
+
+                <h1>Simple, Customisable, Extendible and Free</h1>
+                <br />
+                <br />
+                <div class="intro-text">
+                    Server monitoring application (resource consumption history, logs, etc.).
+                    <br />
+                    <br />
+                    Framework for rapid development of app monitoring or full web apps.
+                    <br />
+                    <br />
+                    Based on <a href='https://www.python.org/'>Python</a> (2 or 3) + <a href='http://www.tornadoweb.org/en/stable/'>Tornado</a>.
+                    <br />
+                    <br />
                 </div>
+                <br />
+
+                <!--
+                <h1 id="homeHeading">Your Favorite Source of Free Bootstrap Themes</h1>
+                <hr>
+                <p>Start Bootstrap can help you build better websites using the Bootstrap CSS framework! Just download your template and start going, no strings attached!</p>
+                 -->
+                <a href="#about" class="btn btn-primary btn-xl page-scroll">More...</a>
             </div>
         </div>
     </header>
 
-    <!-- Download Section -->
-    <section id="about">
-        <div class="page_section" style='background-color:#b19cd9;'>
-            <div class="container">
+    <section class="bg-primary" id="about">
+        <div class="container">
+            <div class="row">
                 <div class="col-lg-8 col-lg-offset-2">
-                <h3>About MyMon</h3>
-                <h4>Mymon - The Application</h4>
+                <h3 style='color:yellow;'>Mymon - The Application</h3>
                 <p>
-                The MyMon application was developed to provide developers and administrators a simple tool to monitor servers without the learning curve required to install and operate heavy server monitoring applications. The current version contains options such as:
-
+                The MyMon application was developed to provide developers and administrators a simple tool to monitor servers without the learning curve required to install and operate heavy server monitoring applications. The current version contains:
+                </p>
                 <br />
-                <br />
+                <p style='color:beige;'>
                 Zoomable/scrollable history graphs of memory consumption of the entire system as well as a per-process display
                 </p>
                 <img style='width:100%;' src='img/scrshot_monitor.png' />
                 <br />
                 <br />
-                <p>
+                <p style='color:beige;'>
                 A "tail -f" style display of all monitored log files on the server
                 </p>
                 <img style='width:100%;' src='img/scrshot_webtail.png' />
                 <br />
                 <br />
-                <p>
+                <p style='color:beige;'>
                 ... with a customizable configuration to highlight certain log patterns
                 </p>
                 <img style='width:100%;' src='img/scrshot_webtail_settings.png' />
 
                 <br />
                 <br />
-                <p>
-                more features are continuously being developed.
+                <p style='color:beige;'>
+                more features are continuously being developed, so check back soon.
+                If you wish to develop more components, check out the Mymon framework
                 </p>
 
-                <h4>Mymon - The Framework</h4>
+                <h3 style='color:yellow;'>Mymon - The Framework</h3>
+                <p>
+                The Mymon framework was initially developed for the Mymon application, but it quickly became apparent that it is well suited to quickly build other monitoring tools and web applications. Check the quick <a href='#'>tutorial</a> to see how to quickly add plugins or build your own web applications.
+                </p>
 
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Download Section -->
-    <section id="download">
-        <div class="page_section" style='background-color:lightyellow;'>
-            <div class="container">
-                <div class="col-lg-8 col-lg-offset-2">
-                    <h2>Download Mymon</h2>
-                    <p>You can install Mymon by ...</p>
-                    <a href="http://startbootstrap.com/template-overviews/grayscale/" class="btn btn-default btn-lg">Visit Download Page</a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-
-    <!-- Download Section -->
-    <section id="license">
-        <div class="page_section" style='background-color:pink;'>
-            <div class="container">
-                <div class="col-lg-8 col-lg-offset-2">
-                    <h2>Mymon License</h2>
-                    <p>Mymon is licensed under the GPL. A commercial license of the source can be purchased for a tiny fraction of the cost of developing the framework from scratch, and will help the continued development and maintenance of Mymon.
+    <section id="install" style='background-color:#ccccff'>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h2 class="section-heading">Installing Mymon</h2>
+                    <p>
+                        If you have Python 2 or Python 3 installed, simply use<br/>
+                        <span style='font-family:"Courier New"'>pip install mymon</span>
+                        <br />
+                        on your terminal console.
                     </p>
-                    <p><a href="mailto:info@mymon.io">info@mymon.io</a>
+                    <p>
+                        If you do not have Python installed and just want to quickly install the Mymon monitoring application, you can download the setup from <a href='@'>here</a>
                     </p>
-                    <ul class="list-inline banner-social-buttons">
-                        <li>
-                            <a href="https://twitter.com/SBootstrap" class="btn btn-default btn-lg"><i class="fa fa-twitter fa-fw"></i> <span class="network-name">Twitter</span></a>
-                        </li>
-                        <li>
-                            <a href="https://github.com/IronSummitMedia/startbootstrap" class="btn btn-default btn-lg"><i class="fa fa-github fa-fw"></i> <span class="network-name">Github</span></a>
-                        </li>
-                        <li>
-                            <a href="https://plus.google.com/+Startbootstrap/posts" class="btn btn-default btn-lg"><i class="fa fa-google-plus fa-fw"></i> <span class="network-name">Google+</span></a>
-                        </li>
-                    </ul>
                 </div>
             </div>
         </div>
     </section>
 
-
-    <!-- Map Section -->
-    <!-- <div id="map"></div> -->
-
-    <!-- Footer -->
-    <footer>
-        <div class="container text-center">
-            <p>Copyright &copy; mymon.io 2016-2017</p>
+    <section id="tutorial">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h2 class="section-heading">Developer's Tutorial</h2>
+                    This is a quick overview on what is required to develop your own plugins / application. More samples are available in the plugins directory of Mymon.
+                    <h3>Mymon plugins</h3>
+                    <p>
+                    Whether you want to extend the Mymon application or to create your own full-fledged web application based on the Mymon framework, you will first need to create Mymon plugins.
+                    </p>
+                </div>
+            </div>
         </div>
-    </footer>
+    </section>
+
+    <section id="license" style="background-color:beige">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2">
+                    <h2 class="section-heading">License</h2>
+                    <p>Mymon is released as open soure under the GPL license. Commercial licenses without GPL restrictions can be purchased at a tiny fraction of the development cost. For more information, contact:</p>
+                </div>
+                <div class="col-lg-4 text-center">
+                    <i class="fa fa-envelope-o fa-3x sr-contact"></i>
+                    <p><a href="mailto:info@mymon.io">info@mymon.io</a></p>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- jQuery -->
-    <script src="vendor/jquery/jquery.js"></script>
+    <script src="vendor/jquery/jquery.min.js"></script>
 
     <!-- Bootstrap Core JavaScript -->
     <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
 
     <!-- Plugin JavaScript -->
-    <script src="js/jquery.easing.min.js"></script>
-
-    <!-- Google Maps API Key - Use your own API key to enable the map feature. More information on the Google Maps API can be found at https://developers.google.com/maps/ -->
-    <!--
-    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCRngKslUGJTlibkQ3FkfTxj3Xss1UlZDA&sensor=false"></script>
-    -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.3/jquery.easing.min.js"></script>
+    <script src="vendor/scrollreveal/scrollreveal.min.js"></script>
+    <script src="vendor/magnific-popup/jquery.magnific-popup.min.js"></script>
 
     <!-- Theme JavaScript -->
     <script src="js/mymon.js"></script>
