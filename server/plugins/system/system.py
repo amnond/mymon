@@ -1,7 +1,12 @@
 from mmplugin import MymonPlugin
 
 from reqhandler import RH
-from logger import L
+
+import sys
+import logging
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+L = logging.getLogger('system')
+
 
 from db import _DB
 

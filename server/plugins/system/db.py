@@ -10,7 +10,10 @@ import sqlite3 as lite
 
 import time
 
-from logger import L
+import logging
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+L = logging.getLogger('system/db')
+
 
 class _DB(object):
     """ The DB object which serves as the interface to sqlite operaations """

@@ -2,6 +2,7 @@
 The web service implemented via Tornado
 """
 #-*- coding:utf-8 -*-
+import sys
 
 import os.path
 import time
@@ -48,6 +49,7 @@ def copy_plugins_client_files():
 
 
 def load_plugins():
+    L.info(" --> loading plugins")
     ''' Dynamically load and initialize all the Mymon plugins '''
     plugins = []
     currdir = os.path.dirname(__file__)
@@ -56,6 +58,14 @@ def load_plugins():
               if os.path.isdir(plugins_dir+os.sep+x)]
     for dirname in dirs:
         subdir = os.path.join(plugins_dir, dirname)
+
+        # Make sure each plugin has import access to the
+        # other modules in its directory (for some reason
+        # this is sometimes not needed - haven't figured
+        # why yet... )
+        L.info('   -> ' + subdir)
+        sys.path.append(subdir)
+
         files = [x for x in os.listdir(subdir) \
                    if os.path.isfile(os.path.join(subdir, x)) and x.endswith(".py")]
         for filename in files:
@@ -141,8 +151,9 @@ class AjaxHandler(BaseHandler):
 
         user = self.get_current_user()
         reply = RH.ajax_request(user, packet)
-        response = json.dumps(reply)
-        #self.write(response)
+
+        # convert the reply to JSON and then to bytes
+        response = str.encode(json.dumps(reply))
 
         self.set_header("Content-type", 'text/plain')
         self.set_header("Content-Encoding", 'gzip')
@@ -303,7 +314,7 @@ class Web(object):
         app = Application()
         app.init_plugins()
 
-        Application().listen(self.port)
+        app.listen(self.port)
         tornado.ioloop.IOLoop.instance().start()
 
 
