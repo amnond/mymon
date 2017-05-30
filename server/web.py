@@ -121,12 +121,12 @@ class WebsockHandler(tornado.websocket.WebSocketHandler):
 
     def open(self):
         L.info("WebsockHandler open")
-        user = self.get_secure_cookie("user")
+        user = self.get_secure_cookie("user").decode('utf-8')
         L.info("user="+user)
         self.app.on_open_websock(self, user)
 
     def on_message(self, message):
-        user = self.get_secure_cookie("user")
+        user = self.get_secure_cookie("user").decode('utf-8')
         L.info("user="+user)
         self.app.on_msg_websock(self, user, message)
 

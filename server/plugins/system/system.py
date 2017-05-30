@@ -64,7 +64,7 @@ class Procmon(object):
 
     def handle_currmem_req(self, user, packet):
         """ process to requset memory snapshot """
-        L.info("handle_currmem_req, user="+user)
+        L.info("handle_currmem_req, user="+user.decode('utf-8'))
         totmem = psutil.virtual_memory()
         reply = {"used":totmem.used, "available":totmem.available, "free":totmem.free,}
         return reply
