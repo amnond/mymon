@@ -1,4 +1,19 @@
 <style type="text/css">
+#total_memchart {
+    width:85%;
+}
+
+#procs_memchart {
+    width:85%;
+}
+
+#legend_container {
+    width:85%;
+    height:110px;
+    overflow-y: auto;
+    background-color:#cdcdcd;
+}
+
 .vis-point {
     stroke-width:2px;
     fill-opacity:1.0;
@@ -61,7 +76,7 @@ div.legend-element-container {
     cursor:pointer;
 }
 div.legend-element-container.switched_off {
-    background-color: #d3e6ff;
+    background-color: #cdcdcd;;
 }
 
 svg.legend-icon {
@@ -198,7 +213,7 @@ Getting memory...
         // Processes graph container
         visdisplay += '<div id="procs_memchart"></div>';
         // Processes graph external legend container
-        visdisplay += '<div style="height:100px; overflow-y: auto; background-color:#cdcdcd"><center>';
+        visdisplay += '<div id="legend_container"><center>';
         // Processes graph external legend
         visdisplay += '<div id="Legend" class="external-legend"></div>';
         visdisplay += '</center></div>'
@@ -333,7 +348,7 @@ Getting memory...
         var options = {
             defaultGroup: '',
             legend: true,
-            height: '290px',
+            height: '350px',
             zoomMin: 3600000,
             dataAxis: {
                 left: {
@@ -400,7 +415,7 @@ Getting memory...
 
         var dataset = new vis.DataSet(items);
         var options = {
-            height: '290px',
+            height: '350px',
             zoomMin: 3600000,
             dataAxis: {
                 left: {

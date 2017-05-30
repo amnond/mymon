@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <!--
-    This is the index.html template, rendered via web.py from which two parameters
-    are also passed: host, which contains the hostname of this server as it appears
-    to the client, and plugins, which is the array of interfaces to the runtime
-    plugins that were loaded.
+    This is the index.html template, rendered via web.py from which 4 parameters
+    are also passed (find self.render('index.html'... in web.py):
+    host: hostname of this server as it appears to the client
+    plugins: array of interfaces to the runtime plugins that were loaded.
+    plugins_css: array of css files used by the plugins
+    plugins_js: array of js files used by the plugins
 -->
 <head>
 
@@ -162,6 +164,12 @@
     </div>
     <!-- /#wrapper -->
 
+    <!--
+        Include javascript files necessary for index.html and
+        other generic js files that would probably be needed by
+        various plugin templates
+     -->
+
     <!-- jQuery (http://jquery.com/ License:Apache) -->
     <script src="/res/js/jquery-3.1.1.min.js"></script>
 
@@ -184,22 +192,15 @@
          (https://startbootstrap.com/template-overviews/sb-admin-2/ License:MIT) -->
     <script src="/res/js/sb-admin-2.js"></script>
 
-   <!--
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        TODO: for all the JS libraries below and their corresponding CSS files,
-        iterate here on server side (i.e Python Tornado scripting) and get them
-        from the directory of the appropriate plugin.
-        Later versions can enable downloading downloading and installing mymon
-        plugins from the UI
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    -->
     <script src="/res/js/bootstrap.modal.wrapper.js"></script>
-
-    <!-- https://github.com/mindmup/editable-table License:MIT -->
-    <script src="/res/js/mindmup-editabletable.js"></script>
 
     <!-- Javascrpt date manipulations (https://momentjs.com/ License:MIT) -->
     <script src="/res/js/moment.min.js"></script>
+
+    <!--
+        and now include all the javascript files that are required
+        by each plugin
+     -->
 
     {%
         for js_file in plugins_js
