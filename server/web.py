@@ -26,6 +26,8 @@ from logger import L
 # http://guillaumevincent.com/2013/02/12/Basic-authentication-on-Tornado-with-a-decorator.html
 
 def copy_plugins_client_files():
+    plugin_js_files = []
+    plugin_css_files = []
     ''' copy all plugins html resources to the tornado static resources directory '''
     currdir = os.path.dirname(__file__)
     plugins_dir = os.path.join(currdir, 'plugins')
@@ -37,16 +39,33 @@ def copy_plugins_client_files():
         if os.path.isdir(plg_path):
             # Plugin directory. Check if it has client resource
             static_path = os.path.join(plg_path, 'static')
+
+            # Collect all the static js and css files used by
+            # the various plugins so that they can be included
+            # in the index.html template.
+            for root, subdirs, files in os.walk(static_path):
+                if len(subdirs) == 0:
+                    for file in files:
+                        remove = os.sep + 'static'
+                        fullpath = os.path.join(root, file)
+                        fullpath = fullpath.replace(remove, '')
+                        if file.endswith(".js"):
+                            plugin_js_files.append(fullpath)
+                        elif file.endswith(".css"):
+                            plugin_css_files.append(fullpath)
+
             if os.path.isdir(static_path):
                 # plugin has html resources. Copy them to tordado static directory
                 dst = os.path.join(static_dir, pdir)
                 distutils.dir_util.copy_tree(static_path, dst)
+
             templates_path = os.path.join(plg_path, 'templates')
             if os.path.isdir(templates_path):
                 # plugin has html templates. Copy them to tordado template directory
                 dst = os.path.join(templates_dir, pdir)
                 distutils.dir_util.copy_tree(templates_path, dst)
 
+    return (plugin_css_files, plugin_js_files)
 
 def load_plugins():
     L.info(" --> loading plugins")
@@ -96,8 +115,14 @@ class MainHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
         host = self.request.host
-        # Authenticated. Render index.html template and pass the host and plugins
-        self.render('index.html', host=host, plugins=self.app.plugins)
+        # Authenticated. Render index.html template and pass to the
+        # template the parameters of the hos, interfaces of plugins,
+        # list of paths for plugin static js and css files.
+        self.render('index.html',
+                    host=host,
+                    plugins=self.app.plugins,
+                    plugins_js=self.app.plugin_js_files,
+                    plugins_css=self.app.plugin_css_files)
 
 class PageHandler(BaseHandler):
     """ Tornado Specific page """
@@ -227,7 +252,9 @@ class Application(tornado.web.Application):
 
         settings['compress_response'] = True
 
-        copy_plugins_client_files()
+        # save the paths of plugins' static css and js files
+        self.plugin_css_files, self.plugin_js_files = copy_plugins_client_files()
+        # save the interface to the instances of the plugins
         self.plugins = load_plugins()
 
         tornado.web.Application.__init__(self, [

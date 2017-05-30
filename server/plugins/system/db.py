@@ -12,7 +12,7 @@ import time
 
 import logging
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-L = logging.getLogger('system/db')
+L = logging.getLogger('system:db')
 
 
 class _DB(object):

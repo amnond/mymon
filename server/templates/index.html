@@ -36,20 +36,15 @@
     <![endif]-->
 
 
-   <!--
-       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-       TODO: for all the css files below and their corresponding js files,
-       iterate here on server side (i.e Python Tornado scriptingI) and get them
-       from the directory of the appropriate plugin.
-       Later versions can enable downloading and installing mymon
-       plugins from the UI
-       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    -->
+    <!-- Page/plugin specific css from here on -->
 
-    <!-- Page specific css from here on -->
+    {%
+        for css_file in plugins_css
+    %}
+        <link rel="stylesheet" type="text/css" media="all"
+        href="/res/{{ css_file }}" />
+    {% end %}
 
-    <link rel="stylesheet" type="text/css" media="all" href="/res/css/vis-timeline-graph2d.min.css" />
-    <link rel="stylesheet" type="text/css" media="all" href="/res/css/daterangepicker.css" />
     <link rel="stylesheet" type="text/css" media="all" href="/res/css/css_animation.css" />
 
     <style>
@@ -206,11 +201,11 @@
     <!-- Javascrpt date manipulations (https://momentjs.com/ License:MIT) -->
     <script src="/res/js/moment.min.js"></script>
 
-    <!-- Bootstrap date range picker (http://www.daterangepicker.com/ License:MIT) -->
-    <script src="/res/js/daterangepicker.js"></script>
-
-    <!-- vis,js (http://visjs.org/ License: Apace 2.0 or MIT) -->
-    <script src="/res/js/vis-timeline-graph2d.min.js"></script>
+    {%
+        for js_file in plugins_js
+    %}
+        <script src="/res/{{ js_file }}"></script>
+    {% end %}
 
     <script>
         var g_globals = {}
