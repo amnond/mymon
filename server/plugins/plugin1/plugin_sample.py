@@ -20,4 +20,3 @@ class MyPlugin(MymonPlugin):
     def get_page_name(self):
         '''  Return the name of the html page that corresponds to this plugin '''
         return 'plugin_sample'
-    

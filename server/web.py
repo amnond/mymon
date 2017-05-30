@@ -23,6 +23,11 @@ from mmplugin import MymonPlugin
 from reqhandler import RH
 from logger import L
 
+import mmconf
+
+if mmconf.DEBUG:
+    import tornado.autoreload
+
 # http://guillaumevincent.com/2013/02/12/Basic-authentication-on-Tornado-with-a-decorator.html
 
 def copy_plugins_client_files():
@@ -30,7 +35,23 @@ def copy_plugins_client_files():
     plugin_css_files = []
     ''' copy all plugins html resources to the tornado static resources directory '''
     currdir = os.path.dirname(__file__)
+
     plugins_dir = os.path.join(currdir, 'plugins')
+
+    # If the debug flag is on, ask tornado to watch all the plugin development files
+    # (including python and html sources) and reload (and thus reload the python plugins
+    # as well as recopy the plugins' html files to the mymon static web directory) if
+    # any of these files are changed.
+    if mmconf.DEBUG:
+        tornado.autoreload.start()
+        ppath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'plugins')
+        for root, subdirs, files in os.walk(ppath):
+            for file in files:
+                wpath = os.path.join(root, file)
+                if wpath.endswith((".js", ".css", ".html", ".py")):
+                    L.info(wpath)
+                    tornado.autoreload.watch(wpath)
+
     static_dir = os.path.join(currdir, 'static', 'plugins')
     templates_dir = os.path.join(currdir, 'templates', 'plugins')
     dirlist = os.listdir(plugins_dir)
@@ -48,11 +69,11 @@ def copy_plugins_client_files():
                     for file in files:
                         remove = os.sep + 'static'
                         fullpath = os.path.join(root, file)
-                        fullpath = fullpath.replace(remove, '')
+                        webpath = fullpath.replace(remove, '')
                         if file.endswith(".js"):
-                            plugin_js_files.append(fullpath)
+                            plugin_js_files.append(webpath)
                         elif file.endswith(".css"):
-                            plugin_css_files.append(fullpath)
+                            plugin_css_files.append(webpath)
 
             if os.path.isdir(static_path):
                 # plugin has html resources. Copy them to tordado static directory
@@ -246,7 +267,7 @@ class Application(tornado.web.Application):
             'template_path': os.path.join(base_dir, "templates"),
             'static_path': os.path.join(base_dir, "static"),
             "static_url_prefix": "/res/",
-            'debug': True,
+            'debug': mmconf.DEBUG,
             "xsrf_cookies": True
         }
 
