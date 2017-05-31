@@ -49,7 +49,7 @@ def copy_plugins_client_files():
             for file in files:
                 wpath = os.path.join(root, file)
                 if wpath.endswith((".js", ".css", ".html", ".py")):
-                    L.info(wpath)
+                    #L.info(wpath)
                     tornado.autoreload.watch(wpath)
 
     static_dir = os.path.join(currdir, 'static', 'plugins')

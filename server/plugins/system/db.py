@@ -2,7 +2,6 @@
 Interface for database related actions
 """
 # -*- coding: utf-8 -*-
-
 import os
 import sys
 import copy
@@ -34,10 +33,29 @@ class _DB(object):
                                     `prcode` INTEGER, \
                                     `memory` INTEGER ) "
 
+        create_diskmem_table = "CREATE TABLE IF NOT EXISTS diskmem \
+                                  ( `utime`  INTEGER, \
+                                    `total` INTEGER, \
+                                    `used` INTEGER, \
+                                    `free` INTEGER, \
+                                    `percent` REAL ) "
+
+
+        create_network_table = "CREATE TABLE IF NOT EXISTS network \
+                                  ( `utime`  INTEGER, \
+                                    `bsent` INTEGER, \
+                                    `brecv` INTEGER ) "
+
+
         create_idx_time = "CREATE INDEX IF NOT EXISTS `idx_time` ON `procinfo` (`utime` ) "
         create_idx_mem = "CREATE INDEX IF NOT EXISTS `idx_mem` ON `procinfo` (`memory` ) "
 
         create_idx_tmem = "CREATE INDEX IF NOT EXISTS `idx_mtime` ON `totalmem` (`utime` ) "
+
+        create_idx_diskmem = "CREATE INDEX IF NOT EXISTS `idx_dmem` ON `diskmem` (`utime` ) "
+
+        create_idx_network = "CREATE INDEX IF NOT EXISTS `idx_network` ON `network` (`utime` ) "
+
 
         create_prcode2name_table = "CREATE TABLE IF NOT EXISTS prcode2name \
                                       ( `prcode` INTEGER, \
@@ -59,7 +77,14 @@ class _DB(object):
             cur.execute(create_totalmem_table)
             cur.execute(create_idx_tmem)
 
+            cur.execute(create_diskmem_table)
+            cur.execute(create_idx_diskmem)
+
+            cur.execute(create_network_table)
+            cur.execute(create_idx_network)
+
             cur.execute(create_prcode2name_table)
+            cur.execute(create_idx_tmem)
 
             cur.execute(get_proc_codes)
             rows = cur.fetchall()
@@ -147,6 +172,46 @@ class _DB(object):
             cur.execute("rollback")
         self.new_mappings_for_db = []
 
+    def add_net_info(self, net_info):
+        """-----------------------------------------------
+        Input: tuples of (utime, bytes sent, bytes received)
+        Adds the current network stats to the database
+        """
+        stat = (
+            net_info['utime'],
+            net_info['bsent'],
+            net_info['brecv']
+        )
+        try:
+            cur = self.con.cursor()
+            cur.execute("begin")
+            cur.execute("INSERT INTO network VALUES (?, ?, ?)", stat)
+            cur.execute("commit")
+        except self.con.Error:
+            L.error("add_net_info failed!")
+            cur.execute("rollback")
+
+    def add_diskuse_info(self, disk_info):
+        """-----------------------------------------------
+        Input: tuples of (utime, total, used, free, percent)
+        Adds the current disk usage info to the database
+        """
+        usage = (
+            disk_info['utime'],
+            disk_info['total'],
+            disk_info['used'],
+            disk_info['free'],
+            disk_info['percent']
+        )
+        try:
+            cur = self.con.cursor()
+            cur.execute("begin")
+            cur.execute("INSERT INTO diskmem VALUES (?, ?, ?, ?, ?)", usage)
+            cur.execute("commit")
+        except self.con.Error:
+            L.error("add_diskuse_info failed!")
+            cur.execute("rollback")
+
     def get_mem_info(self, start_time, end_time):
         """-----------------------------------------------
         Input: time range for total memory info
@@ -221,3 +286,56 @@ class _DB(object):
         dbg = "proc_query => rows: %d, qtime:%f" % (len(rows), time.time()-t_1)
         L.debug(dbg)
         return reply
+
+    def get_net_info(self, start_time, end_time):
+        """-----------------------------------------------
+        Input: time range for total network traffcc info
+        Returns: tuples of time, sent bytes, received bytes
+        """
+        t_1 = time.time()
+        params = (start_time, start_time, end_time)
+        cur = self.con.cursor()
+        query = "SELECT utime-?, bsent, brecv \
+                 FROM network \
+                 WHERE utime >= ? AND utime <= ?"
+
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        prev_row = []
+        traffic = []
+        for row in rows:
+            utime = row[0]
+            bsent = row[1]
+            brecv = row[2]
+            if len(prev_row) > 0:
+                prev_bsent = prev_row[1]
+                prev_brecv = prev_row[2]
+                diff_bsent = bsent - prev_bsent
+                diff_brecv = brecv - prev_brecv
+                traffic.append((utime, diff_bsent, diff_brecv))
+            prev_row = row
+
+        reply = {"start_time":start_time, "traffic":traffic}
+        dbg = "net query => rows: %d, qtime:%f" % (len(rows), time.time()-t_1)
+        L.debug(dbg)
+        return reply
+
+    def get_diskuse_info(self, start_time, end_time):
+        """-----------------------------------------------
+        Input: time range for disk usage info
+        Returns: tuples of time, disk usage percent
+        """
+        t_1 = time.time()
+        params = (start_time, start_time, end_time)
+        cur = self.con.cursor()
+        query = "SELECT utime-?, percent \
+                 FROM diskmem \
+                 WHERE utime >= ? AND utime <= ?"
+
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        reply = {"start_time":start_time, "disk_usage":rows}
+        dbg = "disk usage query => rows: %d, qtime:%f" % (len(rows), time.time()-t_1)
+        L.debug(dbg)
+        return reply
+

@@ -130,6 +130,8 @@ Getting memory...
     var key_mappings = 'charts:mappings';
     var graph2d_procsmem;
     var graph2d_totalmem;
+    var graph2d_diskmem;
+    var graph2d_network;
     var procs_groups;
     var tlmem_groups;
 
@@ -178,7 +180,7 @@ Getting memory...
     {
         var start = $('#idcalpick').data('daterangepicker').startDate.unix()
         var end = $('#idcalpick').data('daterangepicker').endDate.unix()
-        var json = {request:'mem_log', start:start, end:end};
+        var json = {request:'sys_log', start:start, end:end};
         if (mappings == null) {
             // No mappings from process code to process name yet, request them
             // to be returned with the processes info
@@ -237,6 +239,9 @@ Getting memory...
 
         UI.set_global(key_mappings, mappings);
         displayProcsMem(pinfo.processes, pinfo.start_time, pinfo.memorder);
+
+        displayNetwork(ninfo.traffic, ninfo.start_time);
+        displayDiskUsage(dinfo.disk_usage, dinfo.start_time);
     }
 
     //--------------------------------------------------------------------------
@@ -306,6 +311,14 @@ Getting memory...
             res += num;
         }
         return res;
+    }
+
+    function displayNetwork(traffic, start_time) {
+
+    }
+
+    function displayDiskUsage(disk_usage, start_time) {
+
     }
 
     function displayTotalMem(memhist, start_time)

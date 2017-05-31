@@ -21,11 +21,12 @@ class SysPlugin(MymonPlugin):
         self.proc_timer = None
 
     def start(self, reqhandler, logger, timer):
+        ''' a request by Mymon framework to start this plugin '''
         if self.started:
             L.error("System plugin already started")
             return False
         procmon = Procmon()
-        self.proc_timer = timer(procmon.monitor, 30000)
+        self.proc_timer = timer(procmon.monitor, 10000)
         self.proc_timer.start()
         return True
 
@@ -50,7 +51,7 @@ class Procmon(object):
     """ Procmon encapsulates information collection of OS process """
     def __init__(self):
         self.DB = _DB()
-        RH.register_ajax_handler('mem_log', self.handle_memlog_req)
+        RH.register_ajax_handler('sys_log', self.handle_syslog_req)
         RH.register_ajax_handler('curr_mem', self.handle_currmem_req)
         RH.register_dashboard('mem_dashboard', self.dashboard)
 
@@ -69,7 +70,7 @@ class Procmon(object):
         reply = {"used":totmem.used, "available":totmem.available, "free":totmem.free,}
         return reply
 
-    def handle_memlog_req(self, user, packet):
+    def handle_syslog_req(self, user, packet):
         """ process the requset we regitered to handle """
         #print("=========" + json.dumps(packet))
         start = packet['start']
@@ -77,7 +78,9 @@ class Procmon(object):
         mappings = 'get_mappings' in packet
         pinfo = self.DB.get_proc_info(start, end, mappings)
         minfo = self.DB.get_mem_info(start, end)
-        reply = {"pinfo":pinfo, "minfo":minfo}
+        ninfo = self.DB.get_net_info(start, end)
+        dinfo = self.DB.get_diskuse_info(start, end)
+        reply = {"pinfo":pinfo, "minfo":minfo, "ninfo":ninfo, "dinfo":dinfo}
         return reply
 
     def collect_userprocs_info(self):
@@ -111,14 +114,38 @@ class Procmon(object):
         """ scans OS processes and sends to database """
         procdata = self.collect_userprocs_info()
         now = int(time.time())
+        #-------------------
         proclist = []
         for name in procdata:
             mem = procdata[name]['rss']
             pcode = self.DB.get_code(name)
             proclist.append((now, pcode, mem))
         self.DB.add_proc_info(proclist)
+        #-------------------
         totmem = psutil.virtual_memory()
         self.DB.add_total_mem_info(now, totmem.used, totmem.available, totmem.free)
+        #-------------------
+        disk = psutil.disk_usage('/')
+        dinfo = {
+            "utime" : now,
+            "total" : disk.total,
+            "used" : disk.used,
+            "free" : disk.free,
+            "percent" : disk.percent
+        }
+        self.DB.add_diskuse_info(dinfo)
+        #-------------------
+        net = psutil.net_io_counters()
+        ninfo = {
+            "utime" : now,
+            "brecv" : net.bytes_recv,
+            "bsent" : net.bytes_sent,
+            "precv" : net.packets_recv,
+            "psent" : net.packets_sent,
+            "errin" : net.errin,
+            "errin" : net.errout
+        }
+        self.DB.add_net_info(ninfo)
 
 if __name__ == "__main__":
     PRMON = Procmon()
