@@ -13,7 +13,7 @@ from db import _DB
 """ Process monitor: scans processes and sends status to database """
 import time
 import psutil # https://github.com/giampaolo/psutil
-
+import json
 
 class SysPlugin(MymonPlugin):
     def __init__(self):
@@ -80,7 +80,14 @@ class Procmon(object):
         minfo = self.DB.get_mem_info(start, end)
         ninfo = self.DB.get_net_info(start, end)
         dinfo = self.DB.get_diskuse_info(start, end)
-        reply = {"pinfo":pinfo, "minfo":minfo, "ninfo":ninfo, "dinfo":dinfo}
+        cinfo = self.DB.get_cpu_info(start, end)
+        reply = {
+            "pinfo":pinfo, # full processes info
+            "minfo":minfo, # total memory info
+            "ninfo":ninfo, # total network info
+            "dinfo":dinfo, # total disk info
+            "cinfo":cinfo  # total CPU info
+        }
         return reply
 
     def collect_userprocs_info(self):
@@ -134,6 +141,9 @@ class Procmon(object):
             "percent" : disk.percent
         }
         self.DB.add_diskuse_info(dinfo)
+        #-------------------
+        cpu = json.dumps(psutil.cpu_percent(None, True))
+        self.DB.add_total_cpu(now, cpu)
         #-------------------
         net = psutil.net_io_counters()
         ninfo = {

@@ -40,6 +40,9 @@ class _DB(object):
                                     `free` INTEGER, \
                                     `percent` REAL ) "
 
+        create_totalcpu_table = "CREATE TABLE IF NOT EXISTS totalcpu \
+                                  ( `utime`  INTEGER, \
+                                    `percent` TEXT ) "
 
         create_network_table = "CREATE TABLE IF NOT EXISTS network \
                                   ( `utime`  INTEGER, \
@@ -51,6 +54,8 @@ class _DB(object):
         create_idx_mem = "CREATE INDEX IF NOT EXISTS `idx_mem` ON `procinfo` (`memory` ) "
 
         create_idx_tmem = "CREATE INDEX IF NOT EXISTS `idx_mtime` ON `totalmem` (`utime` ) "
+
+        create_idx_tcpu = "CREATE INDEX IF NOT EXISTS `idx_tcputime` ON `totalcpu` (`utime` ) "
 
         create_idx_diskmem = "CREATE INDEX IF NOT EXISTS `idx_dmem` ON `diskmem` (`utime` ) "
 
@@ -76,6 +81,9 @@ class _DB(object):
 
             cur.execute(create_totalmem_table)
             cur.execute(create_idx_tmem)
+
+            cur.execute(create_totalcpu_table)
+            cur.execute(create_idx_tcpu)
 
             cur.execute(create_diskmem_table)
             cur.execute(create_idx_diskmem)
@@ -191,6 +199,20 @@ class _DB(object):
             L.error("add_net_info failed!")
             cur.execute("rollback")
 
+    def add_total_cpu(self, utime, percent):
+        """-----------------------------------------------
+        Input: utime, total cpu percent
+        Adds the current cpu usage info to the database
+        """
+        try:
+            cur = self.con.cursor()
+            cur.execute("begin")
+            cur.execute("INSERT INTO totalcpu VALUES (?, ?)", (utime, percent))
+            cur.execute("commit")
+        except self.con.Error:
+            L.error("add_total_cpu failed!")
+            cur.execute("rollback")
+
     def add_diskuse_info(self, disk_info):
         """-----------------------------------------------
         Input: tuples of (utime, total, used, free, percent)
@@ -229,6 +251,26 @@ class _DB(object):
         rows = cur.fetchall()
         reply = {"start_time":start_time, "totalmem":rows}
         dbg = "mem_query => rows: %d, qtime:%f" % (len(rows), time.time()-t_1)
+        L.debug(dbg)
+        return reply
+
+    def get_cpu_info(self, start_time, end_time):
+        """-----------------------------------------------
+        Input: time range for total memory info
+        Returns: tuples of time, cpu load per processor
+        """
+
+        t_1 = time.time()
+        params = (start_time, start_time, end_time)
+        cur = self.con.cursor()
+        query = "SELECT utime-?, percent \
+                 FROM totalcpu \
+                 WHERE utime >= ? AND utime <= ?"
+
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        reply = {"start_time":start_time, "total_cpu":rows}
+        dbg = "cpu_query => rows: %d, qtime:%f" % (len(rows), time.time()-t_1)
         L.debug(dbg)
         return reply
 

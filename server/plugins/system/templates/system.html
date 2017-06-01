@@ -7,6 +7,10 @@
     width:86%;
 }
 
+#percent_chart {
+    width:86%;
+}
+
 #legend_container {
     width:85%;
     height:110px;
@@ -128,12 +132,14 @@ Getting memory...
 <script>
     var mappings;
     var key_mappings = 'charts:mappings';
-    var graph2d_procsmem;
-    var graph2d_totalmem;
-    var graph2d_diskmem;
-    var graph2d_network;
-    var procs_groups;
-    var tlmem_groups;
+    var graph2d_procsmem; // vis.js graph for processes RAM memory
+    var graph2d_totalmem; // vis.js graph for total RAM memory graph
+    var graph2d_percent;  // vis.js graph for CPU and disk percent taken
+    var graph2d_network; // vis.js graph for sent/rev network traffic
+    var procs_groups; // groups for processes RAM memory graph
+    var tlmem_groups; // groups for total RAM memory graph
+    var percent_groups; // groups for CPU and disk percent
+    var network_groups; // groups for total sent/rev network traffic
 
     function on_view_unloading()
     {
@@ -190,8 +196,13 @@ Getting memory...
         document.getElementById('visjs').innerHTML = '';
         graph2d_procsmem = null;
         graph2d_totalmem = null;
+        graph2d_percent = null;
+        graph2d_network = null;
+
         procs_groups = null;
         tlmem_groups = null;
+        percent_groups = null;
+        network_groups = null;
 
         UI.postRequest(json, processResult)
     }
@@ -218,7 +229,8 @@ Getting memory...
         visdisplay += '<div id="legend_container"><center>';
         // Processes graph external legend
         visdisplay += '<div id="Legend" class="external-legend"></div>';
-        visdisplay += '</center></div>'
+        visdisplay += '</center></div>';
+        visdisplay += '<h5>CPU &amp Disk Utilisation</h5><div id="percent_chart"></div>';
 
         document.getElementById('visjs').innerHTML = visdisplay;
 
@@ -235,13 +247,22 @@ Getting memory...
             }
         }
         var minfo = reply.minfo;
+        var cinfo = reply.cinfo;
+        var dinfo = reply.dinfo;
+        var ninfo = reply.ninfo;
+
         displayTotalMem(minfo.totalmem, minfo.start_time);
 
         UI.set_global(key_mappings, mappings);
         displayProcsMem(pinfo.processes, pinfo.start_time, pinfo.memorder);
 
         displayNetwork(ninfo.traffic, ninfo.start_time);
-        displayDiskUsage(dinfo.disk_usage, dinfo.start_time);
+        displayPercentTotals(
+            dinfo.disk_usage,
+            dinfo.start_time,
+            cinfo.total_cpu,
+            cinfo.start_time,
+        );
     }
 
     //--------------------------------------------------------------------------
@@ -317,13 +338,97 @@ Getting memory...
 
     }
 
-    function displayDiskUsage(disk_usage, start_time) {
+    function displayPercentTotals(disk_usage, dstart, total_cpus_data, cstart) {
+        percent_total_groups = new vis.DataSet();
+        var items = [];
+        var start = Date.now();
+
+        var percent_groups_data = [
+            { 'name':'CPU', 'col':'#cdcdcd' },
+            { 'name':'Disk', 'col':'blue' }
+        ];
+
+        var total_cpu = [];
+        var max;
+        if (disk_usage.length > total_cpus_data.length) {
+            max = disk_usage.length
+        }
+        else {
+            max = total_cpus_data.length
+        }
+        for (var i=0; i<max; i++) {
+            if (i<total_cpus_data.length) {
+                var total_cpu_row = total_cpus_data[i];
+                var utime = parseInt(total_cpu_row[0]);
+                var when = (cstart + utime) * 1000;
+                if (start > when) {
+                    start = when;
+                }
+
+                var cpus = JSON.parse(total_cpu_row[1]);
+                var total = cpus.length;
+                var cpu = 0;
+                // Calculate average load across all processors
+                for (var j=0; j<total; j++) {
+                    cpu += cpus[j];
+                }
+                cpu /= total; // average CPU usage percentage
+                var name = percent_groups_data[0].name;
+                items.push({x:new Date(when), y:cpu, group: name});
+            }
+            if (i<disk_usage.length) {
+                var disk_row = disk_usage[i];
+                var utime = parseInt(disk_row[0]);
+                var when = (dstart + utime) * 1000;
+                if (start > when) {
+                    start = when;
+                }
+
+                var disk = disk_row[1]; // disk usage percentage
+                var name = percent_groups_data[1].name;
+                items.push({x:new Date(when), y:disk, group: name});
+            }
+        }
+
+        percent_groups = new vis.DataSet();
+
+        for (var i=0; i<percent_groups_data.length; i++) {
+            var percent_group_data = percent_groups_data[i];
+            var col = percent_group_data.col;
+            var res = percent_groups.add({
+                id: percent_group_data.name,
+                content: percent_group_data.name,
+                style:  "fill: #ffffff; fill-opacity:0; stroke-width:2px; stroke: " + col + ";"
+            });
+        }
+
+        var options = {
+            defaultGroup: '',
+            legend: true,
+            height: '350px',
+            zoomMin: 3600000,
+            dataAxis: {
+                left: {
+                    title:  {
+                        text: "Percent utilised"
+                    }
+                }
+            },
+            sampling: true,
+            drawPoints: {enabled:false, size:3},
+            interpolation: false,
+            start: start,
+            end: Date.now()
+        };
+
+        var percent_container = document.getElementById('percent_chart');
+        graph2d_percent = new vis.Graph2d(percent_container, items, percent_groups, options);
+        //graph2d_totalmem.on('rangechange', onChangeTotalMemGraph);
 
     }
 
     function displayTotalMem(memhist, start_time)
     {
-        memtl_groups = new vis.DataSet();
         var items = [];
         var start = Date.now();
 
@@ -347,7 +452,9 @@ Getting memory...
             }
         }
 
-        for (var i=0; i<memgroups; i++) {
+        tlmem_groups = new vis.DataSet();
+
+        for (var i=0; i<memgroups.length; i++) {
             var memgroup = memgroups[i];
             var col = memgroup.col;
             var res = tlmem_groups.add({
@@ -357,7 +464,6 @@ Getting memory...
             });
         }
 
-        var dataset = new vis.DataSet(items);
         var options = {
             defaultGroup: '',
             legend: true,
@@ -381,13 +487,12 @@ Getting memory...
         };
 
         var tlmem_container = document.getElementById('total_memchart');
-        graph2d_totalmem = new vis.Graph2d(tlmem_container, items, procs_groups, options);
+        graph2d_totalmem = new vis.Graph2d(tlmem_container, items, tlmem_groups, options);
         graph2d_totalmem.on('rangechange', onChangeTotalMemGraph);
     }
 
     function displayProcsMem(processes, start_time, memorder)
     {
-        procs_groups = new vis.DataSet();
         var items = [];
         var displayed_processes = {};
 
@@ -403,6 +508,8 @@ Getting memory...
                 start = when;
             }
         }
+
+        procs_groups = new vis.DataSet();
 
         for (code in displayed_processes) {
             var name = mappings[code];
@@ -426,7 +533,6 @@ Getting memory...
 
         var procs_container = document.getElementById('procs_memchart');
 
-        var dataset = new vis.DataSet(items);
         var options = {
             height: '350px',
             zoomMin: 3600000,
