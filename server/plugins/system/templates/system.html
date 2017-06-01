@@ -1,3 +1,4 @@
+{% whitespace all %}
 <style type="text/css">
 #total_memchart {
     width:86%;
@@ -8,6 +9,10 @@
 }
 
 #percent_chart {
+    width:86%;
+}
+
+#traffic_chart {
     width:86%;
 }
 
@@ -184,8 +189,15 @@ Getting memory...
 
     function sendDateRange()
     {
-        var start = $('#idcalpick').data('daterangepicker').startDate.unix()
-        var end = $('#idcalpick').data('daterangepicker').endDate.unix()
+        dpdata = $('#idcalpick').data('daterangepicker');
+        var start = dpdata.startDate.unix()
+        var end_date = dpdata.endDate;
+        var end = end_date.unix()
+        mend = moment(end_date);
+        mnow = moment()
+        if (mend.diff(mnow, 'days')==0) {
+            end = mnow.unix();
+        }
         var json = {request:'sys_log', start:start, end:end};
         if (mappings == null) {
             // No mappings from process code to process name yet, request them
@@ -229,8 +241,9 @@ Getting memory...
         visdisplay += '<div id="legend_container"><center>';
         // Processes graph external legend
         visdisplay += '<div id="Legend" class="external-legend"></div>';
-        visdisplay += '</center></div>';
+        visdisplay += '</center></div><br />';
         visdisplay += '<h5>CPU &amp Disk Utilisation</h5><div id="percent_chart"></div>';
+        visdisplay += '<br /><h5>Network Traffic</h5><div id="traffic_chart"></div>';
 
         document.getElementById('visjs').innerHTML = visdisplay;
 
@@ -293,16 +306,28 @@ Getting memory...
     };
     //--------------------------------------------------------------------------
 
+    function sync_ranges(from_graph, range) {
+        var graphlist = [
+            graph2d_procsmem,
+            graph2d_totalmem,
+            graph2d_percent,
+            graph2d_network
+        ];
+
+        var range_ = { start: range.start, end: range.end };
+        for (var i=0; i<graphlist.length; i++) {
+            var graph = graphlist[i];
+            if (graph != from_graph) {
+                graph.setOptions(range_)
+            }
+        }
+    }
+
     function onChangeProcMemGraph(range) {
         if (!range.byUser) {
             return;
         }
-
-        graph2d_totalmem.setOptions({
-            start: range.start,
-            end: range.end,
-            //height: '100%',
-        });
+        sync_ranges(graph2d_procsmem, range);
     }
 
     function onChangeTotalMemGraph(range) {
@@ -310,12 +335,25 @@ Getting memory...
             return;
         }
 
-        graph2d_procsmem.setOptions({
-            start: range.start,
-            end: range.end,
-            //height: '100%'
-        });
+        sync_ranges(graph2d_totalmem, range);
     }
+
+    function onChangeNetworkGraph(range) {
+        if (!range.byUser) {
+            return;
+        }
+
+        sync_ranges(graph2d_network, range);
+    }
+
+    function onChangePercentGraph(range) {
+        if (!range.byUser) {
+            return;
+        }
+
+        sync_ranges(graph2d_percent, range);
+    }
+
 
     //--------------------------------------------------------------------------
 
@@ -335,11 +373,75 @@ Getting memory...
     }
 
     function displayNetwork(traffic, start_time) {
+        var items = [];
+        var start = Date.now();
+
+        var traffic_groups_data = [
+            { 'name':'Bytes/sec sent', 'col':'green' },
+            { 'name':'Bytes/sec received', 'col':'orange' }
+        ];
+
+        var last_utime = 0;
+        for (var i=0; i<traffic.length; i++) {
+            var traffic_row = traffic[i];
+            var utime = parseInt(traffic_row[0]);
+            var when = (start_time + utime) * 1000;
+            if (start > when) {
+                start = when;
+            }
+            if (i > 0) {
+                var diff_sent = parseInt(traffic_row[1]);
+                var diff_recv = parseInt(traffic_row[2]);
+                var time_diff = utime - last_utime;
+                var bw_sent = diff_sent / time_diff;
+                var bw_recv = diff_recv / time_diff;
+                last_utime = utime;
+                var sname = traffic_groups_data[0].name;
+                var rname = traffic_groups_data[1].name;
+                items.push({x:new Date(when), y:bw_sent, group: sname});
+                items.push({x:new Date(when), y:bw_recv, group: rname});
+            }
+        }
+
+        network_groups = new vis.DataSet();
+
+        for (var i=0; i<traffic_groups_data.length; i++) {
+            var traffic_group_data = traffic_groups_data[i];
+            var col = traffic_group_data.col;
+            var res = network_groups.add({
+                id: 1-i,
+                content: traffic_group_data.name,
+                style:  "fill: #ffffff; fill-opacity:0; stroke-width:2px; stroke: " + col + ";"
+            });
+        }
+
+        var options = {
+            defaultGroup: '',
+            legend: true,
+            height: '350px',
+            zoomMin: 3600000,
+            dataAxis: {
+                left: {
+                    title:  {
+                        text: "Traffic (Bytes/Sec)"
+                    }
+                }
+            },
+            sampling: true,
+            drawPoints: {enabled:false, size:3},
+            interpolation: false,
+            start: start,
+            end: Date.now()
+        };
+
+        var traffic_container = document.getElementById('traffic_chart');
+        graph2d_network = new vis.Graph2d(traffic_container, items, network_groups, options);
+        graph2d_network.on('rangechange', onChangeNetworkGraph);
+
 
     }
 
     function displayPercentTotals(disk_usage, dstart, total_cpus_data, cstart) {
-        percent_total_groups = new vis.DataSet();
         var items = [];
         var start = Date.now();
 
@@ -423,7 +525,7 @@ Getting memory...
 
         var percent_container = document.getElementById('percent_chart');
         graph2d_percent = new vis.Graph2d(percent_container, items, percent_groups, options);
-        //graph2d_totalmem.on('rangechange', onChangeTotalMemGraph);
+        graph2d_percent.on('rangechange', onChangePercentGraph);
 
     }
 
