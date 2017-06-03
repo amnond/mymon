@@ -1,10 +1,14 @@
 # Linux requirements:
 
 ## For the Mymon framework
-    * sudo pip install tornado
+    * pip install tornado
+
+## For user authentication
+    * pip install bcrypt
+    * pip install dataset
 
 ## Required for the system plugin for system diagnostic info (memory, cpu, disk etc.)
-    * sudo pip install psutil
+    * pip install psutil
 
     For SQLite support on Python 2:
     * sudo apt-get install sqlite3

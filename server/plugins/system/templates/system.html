@@ -250,7 +250,7 @@ Getting memory...
         var reply = JSON.parse(data);
         console.log(reply);
 
-        var pinfo = reply.pinfo
+        var pinfo = reply.pinfo;    // processes info
         if ('mappings' in pinfo) {
             mappings = pinfo.mappings;
         }
@@ -259,10 +259,10 @@ Getting memory...
                 mappings[code] = pinfo.new_mappings[code];
             }
         }
-        var minfo = reply.minfo;
-        var cinfo = reply.cinfo;
-        var dinfo = reply.dinfo;
-        var ninfo = reply.ninfo;
+        var minfo = reply.minfo;  // total memory info
+        var cinfo = reply.cinfo;  // CPU info
+        var dinfo = reply.dinfo;  // total disk use info
+        var ninfo = reply.ninfo;  // network info
 
         displayTotalMem(minfo.totalmem, minfo.start_time);
 
@@ -377,8 +377,8 @@ Getting memory...
         var start = Date.now();
 
         var traffic_groups_data = [
-            { 'name':'Bytes/sec sent', 'col':'green' },
-            { 'name':'Bytes/sec received', 'col':'orange' }
+            { 'name':'Sent', 'col':'green' },
+            { 'name':'Received', 'col':'orange' }
         ];
 
         var last_utime = 0;
@@ -392,7 +392,7 @@ Getting memory...
             if (i > 0) {
                 var diff_sent = parseInt(traffic_row[1]);
                 var diff_recv = parseInt(traffic_row[2]);
-                var time_diff = utime - last_utime;
+                var time_diff = (utime - last_utime)*1000;
                 var bw_sent = diff_sent / time_diff;
                 var bw_recv = diff_recv / time_diff;
                 last_utime = utime;
@@ -423,8 +423,9 @@ Getting memory...
             dataAxis: {
                 left: {
                     title:  {
-                        text: "Traffic (Bytes/Sec)"
-                    }
+                        text: "Traffic (KBytes/Sec)"
+                    },
+                    range: { min:0 }
                 }
             },
             sampling: true,
