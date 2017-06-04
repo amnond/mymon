@@ -1,3 +1,4 @@
+{% whitespace all %}
 <br />
 <style>
 #logstream {
@@ -128,6 +129,8 @@ function write_line(packet)
 
 function updateTable()
 {
+    // Table HTML has been updated, so update all the event bindings
+    // for the new DOM elements.
     console.log("in updateTable");
     var files = getFilesFromTable();
     var html = getFilesHTML(files);
@@ -141,6 +144,10 @@ function updateTable()
     html = getRegexHTML(regexes);
     $('#idRegexDiv').html(html);
     $('#idRegexTable').editableTableWidget();
+    $('.colortd').colorpicker().on('changeColor', function (e) {
+        var color = e.color.toString('rgba');
+        e.target.parentNode.style.backgroundColor = color;
+    });
     $('#idRegexTable td').on('change', function(evt, newValue) {
         updateTable()
     });
@@ -156,12 +163,20 @@ function getRegexFromTable()
     for (var i=1; i<rowLength; i+=1) {
         var row = table.rows[i];
         var pattern = row.cells[0].textContent;
-        var color = row.cells[1].textContent;
-        if (pattern.trim() == '' && color.trim() == '') {
+        if (pattern.trim() == '') {
             continue;
         }
+        //var color = row.cells[1].textContent;
+        var color = '#fdfaff';
+        if ('backgroundColor' in row.cells[1].style) {
+            color = row.cells[1].style.backgroundColor;
+        }
+        // else {
+        //     debugger;
+        // }
         rows.push( {pattern:pattern, colour:color} );
     }
+    console.log("regexes:", rows);
     return rows;
 }
 
@@ -183,14 +198,18 @@ function getRegexHTML(regexes)
         m = 1 - m;
         html += '<tr>';
         html += '<td style="background-color:'+colors[m]+'">'+ rgx.pattern +'</td>';
-        html += '<td style="background-color:'+colors[m]+'">'+ rgx.colour +'</td>';
+        html += '<td class="wall" style="background-color:'+rgx.colour+'; padding=2px;">';
+        html += '<a class="btn btn-default colortd"';
+        html += ' >Set</a></td>';
         html += TDH;
         html += '</tr>';
     }
     m = 1 - m;
     html += '<tr>';
     html += '<td style="background-color:'+colors[m]+'"></td>';
-    html += '<td style="background-color:'+colors[m]+'"></td>';
+    html += '<td class="wall" style="background-color:'+colors[m]+'; padding=2px;">';
+    html += '<a class="btn btn-default colortd"';
+    html += ' >Set</a></td>';
     html += TDH;
     html += '</tr>';
     html += '</tbody>';
@@ -289,6 +308,12 @@ function showSettingsModal()
             var propsdiv_new_height = mbody_new_height;
             mbody.height(mbody_new_height);
             propsdiv.height(propsdiv_new_height);
+
+            $('.colortd').colorpicker().on('changeColor', function (e) {
+                var color = e.color.toString('rgba');
+                e.target.parentNode.style.backgroundColor = color;
+            });
+
         },
         size: "large",
         actions: [{
