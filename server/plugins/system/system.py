@@ -26,7 +26,7 @@ class SysPlugin(MymonPlugin):
             L.error("System plugin already started")
             return False
         procmon = Procmon()
-        self.proc_timer = timer(procmon.monitor, 10000)
+        self.proc_timer = timer(procmon.monitor, 15 * 60 * 1000)
         self.proc_timer.start()
         return True
 

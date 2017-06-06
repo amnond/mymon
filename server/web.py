@@ -34,8 +34,7 @@ def copy_plugins_client_files():
     plugin_js_files = []
     plugin_css_files = []
     ''' copy all plugins html resources to the tornado static resources directory '''
-    currdir = os.path.dirname(__file__)
-
+    currdir = os.path.dirname(os.path.abspath(__file__))
     plugins_dir = os.path.join(currdir, 'plugins')
 
     # If the debug flag is on, ask tornado to watch all the plugin development files
@@ -67,9 +66,10 @@ def copy_plugins_client_files():
             for root, subdirs, files in os.walk(static_path):
                 if len(subdirs) == 0:
                     for file in files:
-                        remove = os.sep + 'static'
                         fullpath = os.path.join(root, file)
-                        webpath = fullpath.replace(remove, '')
+                        webpath = fullpath.replace(currdir + os.sep, '')
+                        webpath = webpath.replace('static' + os.sep, '')
+
                         if file.endswith(".js"):
                             plugin_js_files.append(webpath)
                         elif file.endswith(".css"):
@@ -92,7 +92,7 @@ def load_plugins():
     L.info(" --> loading plugins")
     ''' Dynamically load and initialize all the Mymon plugins '''
     plugins = []
-    currdir = os.path.dirname(__file__)
+    currdir = os.path.dirname(os.path.abspath(__file__))
     plugins_dir = os.path.join(currdir, 'plugins')
     dirs = [x for x in os.listdir(plugins_dir) \
               if os.path.isdir(plugins_dir+os.sep+x)]
@@ -117,7 +117,7 @@ def load_plugins():
                 modname, extname = os.path.splitext(filename)
                 if issubclass(pcls, MymonPlugin) and pcls.__module__ == modname:
                     ipcls = pcls()
-                    ipcls.dir = subdir
+                    ipcls.dir = subdir.replace(currdir + os.sep,'')
                     plugins.append(ipcls)
     return plugins
 
@@ -346,15 +346,11 @@ class Web(object):
         self.port = 8888
         self.proc_timer = None
         self.tail_timer = None
-        self.sinterval = 15 * 60 * 1000
 
     def set_config(self, conf):
         """ Set various web server settings """
         if 'port' in conf:
             self.port = conf.port
-
-        if 'proc_scan_interval' in conf:
-            self.sinterval = conf.proc_scan_interval
 
     def ioloop(self):
         """ The Tornado event loop """
