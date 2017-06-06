@@ -79,6 +79,32 @@ $(window).on('resize', function() {
     adjustLogWindowSize();
 });
 
+function initialize_colorpickers()
+{
+    // iterate over all the color 'Set' buttons
+    $('.colortd').each( function (index, value) {
+        $(this).colorpicker({
+            // initialize each button's colorpicker
+            // color to be that of it's parent div
+            color: this.parentNode.style.backgroundColor,
+            format: 'rgb'
+        }).on('changeColor', function (e) {
+            // and when the  colorpick's color changes
+            var color = e.color.toString('rgba');
+            // then change the background color of the
+            // button's parent div
+            e.target.parentNode.style.backgroundColor = color;
+            // and remember this color as the starting
+            // color for the colorpicker for this button
+            // next time it is clicked.
+            $(e.target).colorpicker({
+                color: color,
+                format: 'rgb'
+            });
+        });
+    });
+}
+
 function adjustLogWindowSize()
 {
     var logw = $('#logstream');
@@ -144,10 +170,9 @@ function updateTable()
     html = getRegexHTML(regexes);
     $('#idRegexDiv').html(html);
     $('#idRegexTable').editableTableWidget();
-    $('.colortd').colorpicker().on('changeColor', function (e) {
-        var color = e.color.toString('rgba');
-        e.target.parentNode.style.backgroundColor = color;
-    });
+
+    initialize_colorpickers();
+
     $('#idRegexTable td').on('change', function(evt, newValue) {
         updateTable()
     });
@@ -309,11 +334,7 @@ function showSettingsModal()
             mbody.height(mbody_new_height);
             propsdiv.height(propsdiv_new_height);
 
-            $('.colortd').colorpicker().on('changeColor', function (e) {
-                var color = e.color.toString('rgba');
-                e.target.parentNode.style.backgroundColor = color;
-            });
-
+            initialize_colorpickers()
         },
         size: "large",
         actions: [{
