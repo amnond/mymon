@@ -2,12 +2,20 @@
 <br />
 <style>
 #logstream {
-    overflow-x:auto;
+    /*overflow-x:auto;*/
     overflow-y:auto;
+    word-wrap: break-word;
     background-color: #fdfaff;
     border: 1px solid #adadfd;
     font-family:monospace,Courier;
-    white-space: pre;
+    /*white-space: pre;*/
+    white-space: wrap;
+}
+.when {
+    background-color: #ffffdd;
+}
+.path {
+    background-color: #ccff00;
 }
 </style>
 <a class="btn btn-default" id='idState' onclick="togglePause()" >Pause</a>
@@ -129,10 +137,17 @@ function clearLog()
     $('#logstream').html('');
 }
 
+var g_lastpath = '';
+
 function write_line(packet)
 {
     var lines = packet.l.split("\n");
-    html = "";
+    var html = "";
+    var path = packet.p;
+    if (g_lastpath != path) {
+        html += '<span class="path">'+path+'</span><br />';
+        g_lastpath = path;
+    }
     for (var i=0; i<lines.length-1; i++) {
         var line = lines[i];
         for (var j=0; j<g_regexes.length; j++) {
@@ -143,7 +158,8 @@ function write_line(packet)
                 return "<span style='background-color:"+col+"'>" + v + "</span>"
             });
         }
-        html +=  packet.t + ':' + line + "<br />";
+        html += "<span class='when'>";
+        html += packet.t + '</span> ' + line + "<br />";
     }
     var stream = document.getElementById('logstream');
 
@@ -251,7 +267,7 @@ function getFilesFromTable()
         var follow = $(td).next().find('input')[0].checked;
         var file = $.trim(table_files[i].textContent);
         if (file != "") {
-            files[file] = {follow:1, muted:!follow};
+            files[file] = {follow:1, muted:!follow, uipos:i};
         }
     }
     return files;
@@ -259,6 +275,19 @@ function getFilesFromTable()
 
 function getFilesHTML(files)
 {
+    var arFiles = [];
+    for (var file in files) {
+        var fileObj = files[file];
+        if (!('uipos' in fileObj)) {
+            fileObj.uipos = 999;
+        }
+        fileObj.name = file;
+        arFiles.push(fileObj);
+    }
+    arFiles.sort(function(a, b) {
+        return a.uipos > b.uipos
+    });
+
     // Build html table according to contents of g_files
     var colors = [ '#dbe5f7', '#f8edff' ];
     var m = 1;
@@ -267,18 +296,20 @@ function getFilesHTML(files)
     html += '<th>Follow</th>';
     html += '<th></th></tr></thead>';
     html += '<tbody>';
-    for (var file in files) {
+    for (var i=0; i<arFiles.length; i++) {
+        var fileObj = arFiles[i];
+        var file = fileObj.name;
         m = 1 - m;
         html += '<tr><td style="background-color:'+colors[m]+'">'+ file +'</td>';
         var td = TDH;
         var checked = 'checked';
-        if (files[file].follow == 0) {
+        if (fileObj.follow == 0) {
             // Server marked this as a bad directory
             td = TDHB;
             // if it can't be followed, remove the follow checkmark
             checked = '';
         }
-        if ( files[file].muted ) {
+        if ( fileObj.muted ) {
             checked = '';
         }
         html += '<td style="background-color:'+colors[m]+'" class="wall">';
