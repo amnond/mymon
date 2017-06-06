@@ -43,3 +43,4 @@ site/package.json
 site/vendor/magnific-popup/
 site/vendor/scrollreveal/
 tornado.pdf
+server/plugins/webtail/webtail.json
