@@ -25,7 +25,7 @@ from logger import L
 
 import mmconf
 
-if mmconf.DEBUG:
+if mmconf.OPT['DEBUG']:
     import tornado.autoreload
 
 # http://guillaumevincent.com/2013/02/12/Basic-authentication-on-Tornado-with-a-decorator.html
@@ -41,7 +41,7 @@ def copy_plugins_client_files():
     # (including python and html sources) and reload (and thus reload the python plugins
     # as well as recopy the plugins' html files to the mymon static web directory) if
     # any of these files are changed.
-    if mmconf.DEBUG:
+    if mmconf.OPT['DEBUG']:
         tornado.autoreload.start()
         ppath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'plugins')
         for root, subdirs, files in os.walk(ppath):
@@ -99,11 +99,23 @@ def load_plugins():
     for dirname in dirs:
         subdir = os.path.join(plugins_dir, dirname)
 
+        # get the UI order for this plugin directory
+        pbasedir = os.path.basename(os.path.normpath(subdir))
+        puipos = 999999
+        plugins_order = mmconf.OPT['plugins_order']
+        if pbasedir in plugins_order:
+            puipos = plugins_order[pbasedir]
+
         # Make sure each plugin has import access to the
         # other modules in its directory (for some reason
         # this is sometimes not needed - haven't figured
         # why yet... )
         L.info('   -> ' + subdir)
+
+        if puipos == 0:
+            L.info("      ... Skipping plugin (config.json)")
+            continue
+
         sys.path.append(subdir)
 
         files = [x for x in os.listdir(subdir) \
@@ -112,13 +124,15 @@ def load_plugins():
             plugin_candidate = os.path.join(subdir, filename)
             plugin_module = loadmodule.load_module(plugin_candidate)
             plugin_classes = inspect.getmembers(plugin_module, inspect.isclass)
+            modname, extname = os.path.splitext(filename)
             for plugin_class in plugin_classes:
                 pcls = plugin_class[1]
-                modname, extname = os.path.splitext(filename)
                 if issubclass(pcls, MymonPlugin) and pcls.__module__ == modname:
                     ipcls = pcls()
-                    ipcls.dir = subdir.replace(currdir + os.sep,'')
+                    ipcls.dir = subdir.replace(currdir + os.sep, '')
+                    ipcls.uipos = puipos
                     plugins.append(ipcls)
+    plugins.sort(key=lambda o: o.uipos)
     return plugins
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -267,7 +281,7 @@ class Application(tornado.web.Application):
             'template_path': os.path.join(base_dir, "templates"),
             'static_path': os.path.join(base_dir, "static"),
             "static_url_prefix": "/res/",
-            'debug': mmconf.DEBUG,
+            'debug': mmconf.OPT['DEBUG'],
             "xsrf_cookies": True
         }
 

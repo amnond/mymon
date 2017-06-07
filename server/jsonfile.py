@@ -15,7 +15,7 @@ def load_json(path):
     try:
         filep = open(path)
     except IOError:
-        L.error("Error: can't open " + path + " for reading")
+        L.warning("Can't open " + path + " for reading")
         return False
 
     data = {}
