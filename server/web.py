@@ -89,8 +89,8 @@ def copy_plugins_client_files():
     return (plugin_css_files, plugin_js_files)
 
 def load_plugins():
-    L.info(" --> loading plugins")
     ''' Dynamically load and initialize all the Mymon plugins '''
+    L.info(" --> loading plugins")
     plugins = []
     currdir = os.path.dirname(os.path.abspath(__file__))
     plugins_dir = os.path.join(currdir, 'plugins')
@@ -118,6 +118,11 @@ def load_plugins():
 
         sys.path.append(subdir)
 
+        # Go over all the python files in the plugin folder and inspect their
+        # classes. and if a class is derived from Mymon plugin, instantiate it
+        # and add it to the list of plugins
+        # TODO: Make sure that only one MymonPlugin derived class exists within
+        #       a plugin directory.
         files = [x for x in os.listdir(subdir) \
                    if os.path.isfile(os.path.join(subdir, x)) and x.endswith(".py")]
         for filename in files:
@@ -132,6 +137,7 @@ def load_plugins():
                     ipcls.dir = subdir.replace(currdir + os.sep, '')
                     ipcls.uipos = puipos
                     plugins.append(ipcls)
+    # Sort the loaded plugins according to their configured UI position
     plugins.sort(key=lambda o: o.uipos)
     return plugins
 

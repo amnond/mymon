@@ -1,5 +1,5 @@
 '''
-Varioud configuration settings of mymon - should be moved to JSON file
+Various configuration settings of mymon
 '''
 import jsonfile
 
