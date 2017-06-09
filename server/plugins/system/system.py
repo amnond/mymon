@@ -53,11 +53,11 @@ class Procmon(object):
         self.DB = _DB()
         RH.register_ajax_handler('sys_log', self.handle_syslog_req)
         RH.register_ajax_handler('curr_mem', self.handle_currmem_req)
-        RH.register_dashboard('mem_dashboard', self.dashboard)
+        RH.register_dashboard(self.get_dashboard_ui)
 
-    def dashboard(self):
+    def get_dashboard_ui(self):
         """ UI for mympn dashboard """
-        return "<br />Procmon plugin UI for dashboard<br />"
+        return "<br />System plugin UI for dashboard<br />"
 
     def free_mem(self):
         """ caclulate free memory """

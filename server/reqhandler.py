@@ -1,5 +1,8 @@
 """ Module that contains the global registration handler """
 import json
+import os
+import inspect
+import mmconf
 from logger import L
 
 class _RequestHandler(object):
@@ -12,17 +15,30 @@ class _RequestHandler(object):
 
     def get_dashboard_ui(self, user, packet):
         """ collect all the dashboard UI from the different components """
-        html = '<h5>Mymon Dashboard</h5><hr />'
-        for handler in self.dashboard_handlers:
-            html += self.dashboard_handlers[handler]()
-        return {"html":html}
+        dashboard_ui = []
+        plugins_order = mmconf.OPT['plugins_order']
+        for plugin in self.dashboard_handlers:
+            puipos = 999999
+            plugins_order = mmconf.OPT['plugins_order']
+            if plugin in plugins_order:
+                puipos = plugins_order[plugin]
+            if puipos != 0:
+                html = self.dashboard_handlers[plugin]()
+                dashboard_elem = {"uipos":puipos, "name":plugin, "html":html}
+                dashboard_ui.append(dashboard_elem)
+        dashboard_ui.sort(key=lambda o: o['uipos'])
+        return {"dashboard_ui":dashboard_ui}
 
-    def register_dashboard(self, request, function):
+    def register_dashboard(self, function):
         """ add a dashboard function for a monitoring component """
-        if request in self.dashboard_handlers:
-            L.error("Error: request:" + request + " is already registered")
+        frame = inspect.stack()[1]
+        plugin_file = os.path.basename(os.path.normpath(frame.filename))
+        plugin_name = plugin_file.replace(".py", "")
+
+        if plugin_name in self.dashboard_handlers:
+            L.error("Error:" + plugin_name + " is already in dashboard")
             return False
-        self.dashboard_handlers[request] = function
+        self.dashboard_handlers[plugin_name] = function
         return True
 
     def register_ajax_handler(self, request, function):

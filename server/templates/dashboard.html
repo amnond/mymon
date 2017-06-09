@@ -39,11 +39,16 @@ function processDashboardInfo(data)
 {
     //console.log(data)
     var reply = JSON.parse(data);
-    if (!('html' in reply)) {
+    if (!('dashboard_ui' in reply)) {
         console.log("No html field found in reply");
         return;
     }
 
-    $('#dashboard').html(reply.html);
+    var elems = reply['dashboard_ui'];
+    var html = '';
+    for (var i=0; i<elems.length; i++) {
+        html += elems[i].html
+    }
+    $('#dashboard').html(html);
 }
 </script>
