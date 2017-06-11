@@ -7,8 +7,8 @@ import sys
 import os.path
 import time
 import json
-import distutils
-from distutils import dir_util
+# import distutils
+# from distutils import dir_util
 import shutil
 import inspect
 import zlib
@@ -83,13 +83,14 @@ def copy_plugins_client_files():
                             plugin_css_files.append(webpath)
 
             if os.path.isdir(static_path):
-                # plugin has html resources. Copy them to tordado static directory
+                # plugin has html resources. Copy them to tornado static directory
                 dst = os.path.join(static_dir, pdir)
-                distutils.dir_util.copy_tree(static_path, dst)
+                copytree_process(static_path, dst)
+                #distutils.dir_util.copy_tree(static_path, dst)
 
             templates_path = os.path.join(plg_path, 'templates')
             if os.path.isdir(templates_path):
-                # plugin has html templates. Copy them to tordado template directory
+                # plugin has html templates. Copy them to tornado template directory
                 dst = os.path.join(templates_dir, pdir)
                 copytree_process(templates_path, dst, process_dst)
                 #distutils.dir_util.copy_tree(templates_path, dst)
@@ -112,7 +113,8 @@ def process_dst(dst_path):
 
 def copytree_process(src, dst, process=None, symlinks=False):
     names = os.listdir(src)
-    shutil.rmtree(dst)
+    if os.path.isdir(dst):
+        shutil.rmtree(dst)
     os.makedirs(dst)
     errors = []
     for name in names:
@@ -142,8 +144,8 @@ def copytree_process(src, dst, process=None, symlinks=False):
         pass
     except OSError as why:
         errors.extend((src, dst, str(why)))
-    for i in errors:
-        L.error(errors[i])
+    for err in errors:
+        L.error(err)
     return len(errors) == 0
 
 def load_plugins():
