@@ -9,6 +9,7 @@ import time
 import json
 import distutils
 from distutils import dir_util
+import shutil
 import inspect
 import zlib
 import tornado.httpserver
@@ -27,6 +28,12 @@ import mmconf
 
 if mmconf.OPT['DEBUG']:
     import tornado.autoreload
+
+def fopen(filename, opt):
+    ver = sys.version_info.major
+    if ver < 3:
+        return file(filename, opt)
+    return open(filename, opt)
 
 # http://guillaumevincent.com/2013/02/12/Basic-authentication-on-Tornado-with-a-decorator.html
 
@@ -84,9 +91,60 @@ def copy_plugins_client_files():
             if os.path.isdir(templates_path):
                 # plugin has html templates. Copy them to tordado template directory
                 dst = os.path.join(templates_dir, pdir)
-                distutils.dir_util.copy_tree(templates_path, dst)
+                copytree_process(templates_path, dst, process_dst)
+                #distutils.dir_util.copy_tree(templates_path, dst)
 
     return (plugin_css_files, plugin_js_files)
+
+def process_dst(dst_path):
+    name, ext = os.path.splitext(dst_path)
+    if ext not in ('.html', '.htm'):
+        return
+    with fopen(dst_path, "r") as f1:
+        with fopen(dst_path+".tmp", "w") as f2:
+            # Make sure source format will remain the same when sent
+            # to the client - makes client side debugging easier
+            f2.write("{% whitespace all %}\n")
+            for line in f1:
+                f2.write(line)
+    os.remove(dst_path)
+    shutil.move(dst_path+".tmp", dst_path)
+
+def copytree_process(src, dst, process=None, symlinks=False):
+    names = os.listdir(src)
+    shutil.rmtree(dst)
+    os.makedirs(dst)
+    errors = []
+    for name in names:
+        srcname = os.path.join(src, name)
+        dstname = os.path.join(dst, name)
+        try:
+            if symlinks and os.path.islink(srcname):
+                linkto = os.readlink(srcname)
+                os.symlink(linkto, dstname)
+            elif os.path.isdir(srcname):
+                copytree_process(srcname, dstname, process, symlinks)
+            else:
+                shutil.copy2(srcname, dstname)
+                if process is not None:
+                    process(dstname)
+
+        except (IOError, os.error) as why:
+            errors.append((srcname, dstname, str(why)))
+        # catch the Error from the recursive copytree so that we can
+        # continue with other files
+        except Error as err:
+            errors.extend(err.args[0])
+    try:
+        shutil.copystat(src, dst)
+    except WindowsError:
+        # can't copy file access times on Windows
+        pass
+    except OSError as why:
+        errors.extend((src, dst, str(why)))
+    for i in errors:
+        L.error(errors[i])
+    return len(errors) == 0
 
 def load_plugins():
     ''' Dynamically load and initialize all the Mymon plugins '''

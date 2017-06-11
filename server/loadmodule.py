@@ -1,7 +1,9 @@
+''' utility to load a python module, regardless of python version '''
 import sys
 import os
 
 def load_module(filepath):
+    ''' If python version less than 3.4 then need to use imp to load'''
     mod_name, file_ext = os.path.splitext(os.path.split(filepath)[-1])
     ver = sys.version_info[0:2]
 
