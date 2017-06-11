@@ -24,6 +24,10 @@ class _RequestHandler(object):
                 puipos = plugins_order[plugin]
             if puipos != 0:
                 html = self.dashboard_handlers[plugin]()
+                try:
+                    html = html.decode('utf-8')
+                except AttributeError:
+                    pass
                 dashboard_elem = {"uipos":puipos, "name":plugin, "html":html}
                 dashboard_ui.append(dashboard_elem)
         dashboard_ui.sort(key=lambda o: o['uipos'])

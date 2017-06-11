@@ -2,6 +2,7 @@ from mmplugin import MymonPlugin
 
 from reqhandler import RH
 
+import os
 import sys
 import logging
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
@@ -9,6 +10,7 @@ L = logging.getLogger('system')
 
 
 from db import _DB
+from tornado import template
 
 """ Process monitor: scans processes and sends status to database """
 import time
@@ -51,13 +53,14 @@ class Procmon(object):
     """ Procmon encapsulates information collection of OS process """
     def __init__(self):
         self.DB = _DB()
+        self.loader = template.Loader(os.path.dirname(__file__))
         RH.register_ajax_handler('sys_log', self.handle_syslog_req)
         RH.register_ajax_handler('curr_mem', self.handle_currmem_req)
         RH.register_dashboard(self.get_dashboard_ui)
 
     def get_dashboard_ui(self):
         """ UI for mympn dashboard """
-        return "<br />System plugin UI for dashboard<br />"
+        return self.loader.load("dashboard.html").generate(myvalue="IZ GOOD!")
 
     def free_mem(self):
         """ caclulate free memory """

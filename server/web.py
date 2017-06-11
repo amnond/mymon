@@ -225,7 +225,7 @@ class MainHandler(BaseHandler):
                     plugins_js=self.app.plugin_js_files,
                     plugins_css=self.app.plugin_css_files)
 
-class PageHandler(BaseHandler):
+class TemplateHandler(BaseHandler):
     """ Tornado Specific page """
     @tornado.web.authenticated
     def get(self, url):
@@ -344,8 +344,11 @@ class Application(tornado.web.Application):
         settings = {
             "cookie_secret": "bZJc2sWbQLKos6GkHn/VB9oXwQt8S0R0kRvJ5/xJ89E=",
             "login_url": "/login",
+            # location from which templates will be loaded
             'template_path': os.path.join(base_dir, "templates"),
+            # location from which static files will be loaded
             'static_path': os.path.join(base_dir, "static"),
+            # the url prefix by which the static files are referenced from the client:
             "static_url_prefix": "/res/",
             'debug': mmconf.OPT['DEBUG'],
             "xsrf_cookies": True
@@ -361,10 +364,13 @@ class Application(tornado.web.Application):
         tornado.web.Application.__init__(self, [
             tornado.web.url(r"/(favicon\.ico)", tornado.web.StaticFileHandler),
             tornado.web.url(r"/", MainHandler, dict(app=self), name="main"),
-            tornado.web.url(r"/(.*\.html)", PageHandler, name="mymon"),
+            # anything with .html suffix, send to template handling
+            tornado.web.url(r"/(.*\.html)", TemplateHandler, name="mymon"),
             tornado.web.url(r'/login', LoginHandler, name="login"),
             tornado.web.url(r'/logout', LogoutHandler, name="logout"),
+            # All ajax requests should be sent to this url
             tornado.web.url(r"/ajax", AjaxHandler, name="ajax"),
+            # All web socket request should be sent to this url
             tornado.web.url(r"/websock/", WebsockHandler, dict(app=self), name="websock"),
         ], **settings)
 
