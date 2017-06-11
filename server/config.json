@@ -2,6 +2,7 @@
     "plugins_order" : {
         "plugin1": 0,
         "plugin2": 0,
-        "webtail": 10
+        "system": 100,
+        "webtail": 200
     }
 }

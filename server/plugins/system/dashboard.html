@@ -1,3 +1,115 @@
-<br />
-System plugin UI for dashboard {{ myvalue }}
-<br />
+
+<H4> System </H4>
+<div class="row">
+    <div class="col-sm-4">
+        <canvas id="freemem"></canvas>
+    </div>
+    <div class="col-sm-4">
+        <canvas id="freedisk"></canvas>
+    </div>
+</div>
+
+<script>
+    var gaugeMem = new RadialGauge({
+        renderTo: 'freemem',
+        width: 250,
+        height: 250,
+        units: "System Memory (MB)",
+        startAngle: 90,
+        ticksAngle: 180,
+        needleWidth: 4,
+        needleCircleSize: 10,
+        needleCircleInner: true,
+        needleCircleOuter: true,
+        needleShadow: false,
+        colorNeedle: "#3CA7DB",
+        colorNeedleEnd: "#2698CE",
+        colorNeedleCircleOuter: "#3CA7DB",
+        colorNeedleCircleOuterEnd: "#3CA7DB",
+        strokeTicks: true,
+        majorTicks: {% raw [str(i) for i in range(0, int(maxmem+1), 1024)] %}, //["0","{{ maxmem }}"],
+        //minorTicks: "{{ maxmem / 256 }}",
+
+        highlights: [
+            {
+                "from": 0,
+                "to": {{maxmem}}/10,
+                "color": "red"
+            },
+            {
+                "from": {{maxmem}}/10,
+                "to": {{maxmem}},
+                "color": "lightgreen"
+            },
+
+        ],
+
+        minValue: 0,
+        maxValue: {{ maxmem }},
+
+        // highlightsWidth: 25,
+        // numbersMargin: 12,
+        animation: true,
+        animationRule: "linear",
+        valueBox: false,
+        borders: false,
+        borderShadowWidth: 0,
+        value: {{ freemem }},
+        animateOnInit: true,
+        animatedValue: true
+
+    }).draw();
+
+    {{ step = 20*int(maxdisk/100) }}
+    var gaugeDisk = new RadialGauge({
+        renderTo: 'freedisk',
+        width: 250,
+        height: 250,
+        units: "Disk Memory (GB)",
+        startAngle: 90,
+        ticksAngle: 180,
+        needleWidth: 4,
+        needleCircleSize: 10,
+        needleCircleInner: true,
+        needleCircleOuter: true,
+        needleShadow: false,
+        colorNeedle: "#3CA7DB",
+        colorNeedleEnd: "#2698CE",
+        colorNeedleCircleOuter: "#3CA7DB",
+        colorNeedleCircleOuterEnd: "#3CA7DB",
+        strokeTicks: true,
+        majorTicks: {% raw [str(i) for i in range(0, int(maxdisk+step), step)] %},
+        //majorTicks: ["0","{{ int(maxdisk) }}"],
+        //minorTicks: "{{ maxmem / 256 }}",
+
+        highlights: [
+            {
+                "from": 0,
+                "to": {{maxdisk}}/10,
+                "color": "red"
+            },
+            {
+                "from": {{maxdisk}}/10,
+                "to": {{maxdisk}},
+                "color": "lightgreen"
+            },
+
+        ],
+
+        minValue: 0,
+        maxValue: {{ maxdisk }},
+
+        // highlightsWidth: 25,
+        // numbersMargin: 12,
+        animation: true,
+        animationRule: "linear",
+        valueBox: false,
+        borders: false,
+        borderShadowWidth: 0,
+        value: {{ freedisk }},
+        animateOnInit: true,
+        animatedValue: true
+
+    }).draw();
+
+</script>

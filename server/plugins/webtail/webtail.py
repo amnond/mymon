@@ -74,7 +74,7 @@ class WebTail(object):
 
     def get_dashboard_ui(self):
         """ UI for mympn dashboard """
-        return "<br />Webtail plugin UI for dashboard<br />"
+        return "<h4>WebTail</h4><br />No information to display<br />"
 
     def log_exeption(self, ex, msg):
         """ generic exception logging """

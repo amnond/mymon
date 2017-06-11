@@ -8,7 +8,6 @@ import logging
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 L = logging.getLogger('system')
 
-
 from db import _DB
 from tornado import template
 
@@ -29,6 +28,7 @@ class SysPlugin(MymonPlugin):
             return False
         procmon = Procmon()
         self.proc_timer = timer(procmon.monitor, 15 * 60 * 1000)
+        #self.proc_timer = timer(procmon.monitor, 10000)
         self.proc_timer.start()
         return True
 
@@ -60,7 +60,22 @@ class Procmon(object):
 
     def get_dashboard_ui(self):
         """ UI for mympn dashboard """
-        return self.loader.load("dashboard.html").generate(myvalue="IZ GOOD!")
+        vmem = psutil.virtual_memory()
+        megabyte = 1024 * 1024
+        gigabyte = megabyte * 1024
+        mfree = vmem.available/megabyte
+        mmax = vmem.total/megabyte
+
+        disk = psutil.disk_usage('/')
+        dmax = disk.total/gigabyte
+        dfree = disk.free/gigabyte
+
+        return self.loader.load("dashboard.html").generate(
+            freemem=mfree,
+            maxmem=mmax,
+            freedisk=dfree,
+            maxdisk=dmax
+        )
 
     def free_mem(self):
         """ caclulate free memory """
@@ -70,7 +85,7 @@ class Procmon(object):
         """ process to requset memory snapshot """
         L.info("handle_currmem_req, user="+user.decode('utf-8'))
         totmem = psutil.virtual_memory()
-        reply = {"used":totmem.used, "available":totmem.available, "free":totmem.free,}
+        reply = {"used":totmem.used, "available":totmem.available, "free":totmem.free}
         return reply
 
     def handle_syslog_req(self, user, packet):
