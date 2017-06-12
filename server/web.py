@@ -29,11 +29,11 @@ import mmconf
 if mmconf.OPT['DEBUG']:
     import tornado.autoreload
 
-def fopen(filename, opt):
-    ver = sys.version_info.major
-    if ver < 3:
-        return file(filename, opt)
-    return open(filename, opt)
+# def fopen(filename, opt):
+#     ver = sys.version_info.major
+#     if ver < 3:
+#         return file(filename, opt)
+#     return open(filename, opt)
 
 # http://guillaumevincent.com/2013/02/12/Basic-authentication-on-Tornado-with-a-decorator.html
 
@@ -101,8 +101,8 @@ def process_dst(dst_path):
     name, ext = os.path.splitext(dst_path)
     if ext not in ('.html', '.htm'):
         return
-    with fopen(dst_path, "r") as f1:
-        with fopen(dst_path+".tmp", "w") as f2:
+    with open(dst_path, "r") as f1:
+        with open(dst_path+".tmp", "w") as f2:
             # Make sure source format will remain the same when sent
             # to the client - makes client side debugging easier
             f2.write("{% whitespace all %}\n")

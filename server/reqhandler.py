@@ -35,10 +35,17 @@ class _RequestHandler(object):
 
     def register_dashboard(self, function):
         """ add a dashboard function for a monitoring component """
-        frame = inspect.stack()[1]
-        plugin_file = os.path.basename(os.path.normpath(frame.filename))
-        plugin_name = plugin_file.replace(".py", "")
 
+        plugin_file = None
+        frame = inspect.stack()[1]
+
+        if hasattr(frame, 'filename'):
+            # Changed from Python 3.5
+            plugin_file = os.path.basename(os.path.normpath(frame.filename))
+        else:
+            plugin_file = os.path.basename(os.path.normpath(frame[1]))
+
+        plugin_name = plugin_file.split(".")[0]
         if plugin_name in self.dashboard_handlers:
             L.error("Error:" + plugin_name + " is already in dashboard")
             return False
