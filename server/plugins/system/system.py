@@ -48,6 +48,19 @@ class SysPlugin(MymonPlugin):
         '''  Return the name of the html page that corresponds to this plugin '''
         return 'system'
 
+def partition(start, end, base, parts):
+    ''' partition a range (start, end) in base "base" by creating
+        "parts" rounded parts '''
+    total = end - start
+    acc = start
+    arr = [str(start)]
+    step = int(total/parts)
+    rounded = base**(len(str(step))-1)
+    part = int(step/rounded)*rounded
+    while acc < end:
+        acc += part
+        arr.append(str(acc))
+    return arr
 
 class Procmon(object):
     """ Procmon encapsulates information collection of OS process """
@@ -70,11 +83,12 @@ class Procmon(object):
         dmax = disk.total/gigabyte
         dfree = disk.free/gigabyte
 
-        return self.loader.load("dashboard.html").generate(
+        return self.loader.load("system_dashboard.html").generate(
             freemem=mfree,
             maxmem=mmax,
             freedisk=dfree,
-            maxdisk=dmax
+            maxdisk=dmax,
+            partition=partition
         )
 
     def free_mem(self):

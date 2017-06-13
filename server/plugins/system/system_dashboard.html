@@ -1,15 +1,16 @@
 
 <H4> System </H4>
 <div class="row">
-    <div class="col-sm-4">
+    <div class="col-sm-6">
         <canvas id="freemem"></canvas>
     </div>
-    <div class="col-sm-4">
+    <div class="col-sm-6">
         <canvas id="freedisk"></canvas>
     </div>
 </div>
-
 <script>
+    var parts = {% raw partition(0, maxmem, 10, 5) %}
+    var mlast = parseInt(parts[parts.length-1])
     var gaugeMem = new RadialGauge({
         renderTo: 'freemem',
         width: 250,
@@ -27,7 +28,7 @@
         colorNeedleCircleOuter: "#3CA7DB",
         colorNeedleCircleOuterEnd: "#3CA7DB",
         strokeTicks: true,
-        majorTicks: {% raw [str(i) for i in range(0, int(maxmem+1), 1024)] %}, //["0","{{ maxmem }}"],
+        majorTicks: parts,
         //minorTicks: "{{ maxmem / 256 }}",
 
         highlights: [
@@ -41,11 +42,15 @@
                 "to": {{maxmem}},
                 "color": "lightgreen"
             },
-
+            {
+                "from": {{maxmem}},
+                "to": mlast,
+                "color": "white"
+            }
         ],
 
         minValue: 0,
-        maxValue: {{ maxmem }},
+        maxValue: mlast,
 
         // highlightsWidth: 25,
         // numbersMargin: 12,
@@ -60,7 +65,8 @@
 
     }).draw();
 
-    {{ step = 20*int(maxdisk/100) }}
+    var dparts = {% raw partition(0, maxdisk, 10, 5) %}
+    var dlast = parseInt(dparts[dparts.length-1])
     var gaugeDisk = new RadialGauge({
         renderTo: 'freedisk',
         width: 250,
@@ -78,7 +84,7 @@
         colorNeedleCircleOuter: "#3CA7DB",
         colorNeedleCircleOuterEnd: "#3CA7DB",
         strokeTicks: true,
-        majorTicks: {% raw [str(i) for i in range(0, int(maxdisk+step), step)] %},
+        majorTicks: dparts,
         //majorTicks: ["0","{{ int(maxdisk) }}"],
         //minorTicks: "{{ maxmem / 256 }}",
 
@@ -93,11 +99,15 @@
                 "to": {{maxdisk}},
                 "color": "lightgreen"
             },
-
+            {
+                "from": {{maxdisk}},
+                "to": dlast,
+                "color": "white"
+            }
         ],
 
         minValue: 0,
-        maxValue: {{ maxdisk }},
+        maxValue: dlast,
 
         // highlightsWidth: 25,
         // numbersMargin: 12,
