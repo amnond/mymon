@@ -1,35 +1,8 @@
+{% whitespace all %}
 <div id="dashboard">
 </div>
 
 <script>
-/*
-if ("MozWebSocket" in window)
-{
-    WebSocket = MozWebSocket;
-}
-
-if (WebSocket)
-{
-    var ws = new WebSocket("ws://127.0.0.1:8888/websock/");
-    ws.onopen = function () { ws.send("moooooooo!") };
-    ws.onmessage = function (evt) {
-        console.log(evt);
-    };
-    ws.onclose = function () { console.log("websock closed")};
-}
-else
-{
-    console.log("WebSocket not supported");
-}
-*/
-
-/*
-$(document).unload(function() {
-    ws.onclose = function () {}; // disable onclose handler first
-    ws.close()
-});
-*/
-
 $(document).ready(function() {
     var json = {request:'__dashboard__'};
     UI.postRequest(json, processDashboardInfo)
@@ -49,7 +22,6 @@ function processDashboardInfo(data)
     for (var i=0; i<elems.length; i++) {
         html += elems[i].html
     }
-    console.log(html)
     $('#dashboard').html(html);
 }
 </script>

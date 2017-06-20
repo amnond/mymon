@@ -136,14 +136,16 @@ Getting memory...
 <script>
     var mappings;
     var key_mappings = 'charts:mappings';
-    var graph2d_procsmem; // vis.js graph for processes RAM memory
-    var graph2d_totalmem; // vis.js graph for total RAM memory graph
-    var graph2d_percent;  // vis.js graph for CPU and disk percent taken
-    var graph2d_network; // vis.js graph for sent/rev network traffic
+    var graph2d_procsmem = null; // vis.js graph for processes RAM memory
+    var graph2d_totalmem = null; // vis.js graph for total RAM memory graph
+    var graph2d_percent = null;  // vis.js graph for CPU and disk percent taken
+    var graph2d_network = null; // vis.js graph for sent/rev network traffic
     var procs_groups; // groups for processes RAM memory graph
     var tlmem_groups; // groups for total RAM memory graph
     var percent_groups; // groups for CPU and disk percent
     var network_groups; // groups for total sent/rev network traffic
+    //var rangeEvent = 'rangechange'; // vis.js event that triggers range sync
+    var rangeEvent = 'rangechanged'; // vis.js event that triggers range sync
 
     function on_view_unloading()
     {
@@ -151,11 +153,6 @@ Getting memory...
     }
 
     $(document).ready(function() {
-        /*
-        $('.opencal').click(function() {
-            $('#idcalpick').click();
-        });
-        */
         mappings = UI.get_global(key_mappings)
 
         var ranges = {
@@ -204,17 +201,6 @@ Getting memory...
             json['get_mappings'] = 1;
         }
 
-        document.getElementById('visjs').innerHTML = '';
-        graph2d_procsmem = null;
-        graph2d_totalmem = null;
-        graph2d_percent = null;
-        graph2d_network = null;
-
-        procs_groups = null;
-        tlmem_groups = null;
-        percent_groups = null;
-        network_groups = null;
-
         UI.postRequest(json, processResult)
     }
 
@@ -231,6 +217,30 @@ Getting memory...
 
     function processResult(data)
     {
+        if (graph2d_procsmem != null) {
+            delete graph2d_procsmem;
+        }
+        if (graph2d_totalmem != null) {
+            delete graph2d_totalmem;
+        }
+        if (graph2d_percent != null) {
+            delete graph2d_percent;
+        }
+        if (graph2d_network != null) {
+            delete graph2d_network;
+        }
+
+        document.getElementById('visjs').innerHTML = '';
+        graph2d_procsmem = null;
+        graph2d_totalmem = null;
+        graph2d_percent = null;
+        graph2d_network = null;
+
+        procs_groups = null;
+        tlmem_groups = null;
+        percent_groups = null;
+        network_groups = null;
+
         // Total memory graph container
         var visdisplay = '<h5>System Memory</h5><div id="total_memchart"></div>';
         visdisplay += '<br /><h5>Processes Memory</h5>';
@@ -436,9 +446,7 @@ Getting memory...
 
         var traffic_container = document.getElementById('traffic_chart');
         graph2d_network = new vis.Graph2d(traffic_container, items, network_groups, options);
-        graph2d_network.on('rangechange', onChangeNetworkGraph);
-
-
+        graph2d_network.on(rangeEvent, onChangeNetworkGraph);
     }
 
     function displayPercentTotals(disk_usage, dstart, total_cpus_data, cstart) {
@@ -525,7 +533,7 @@ Getting memory...
 
         var percent_container = document.getElementById('percent_chart');
         graph2d_percent = new vis.Graph2d(percent_container, items, percent_groups, options);
-        graph2d_percent.on('rangechange', onChangePercentGraph);
+        graph2d_percent.on(rangeEvent, onChangePercentGraph);
 
     }
 
@@ -590,7 +598,7 @@ Getting memory...
 
         var tlmem_container = document.getElementById('total_memchart');
         graph2d_totalmem = new vis.Graph2d(tlmem_container, items, tlmem_groups, options);
-        graph2d_totalmem.on('rangechange', onChangeTotalMemGraph);
+        graph2d_totalmem.on(rangeEvent, onChangeTotalMemGraph);
     }
 
     function displayProcsMem(processes, start_time, memorder)
@@ -656,7 +664,7 @@ Getting memory...
         };
 
         graph2d_procsmem = new vis.Graph2d(procs_container, items, procs_groups, options);
-        graph2d_procsmem.on('rangechange', onChangeProcMemGraph);
+        graph2d_procsmem.on(rangeEvent, onChangeProcMemGraph);
 
         populateExternalLegend(memorder);
     }

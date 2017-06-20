@@ -1,3 +1,4 @@
+from __future__ import division
 from mmplugin import MymonPlugin
 
 from reqhandler import RH
