@@ -1,9 +1,10 @@
-* Load dashboard segment from template
 * Productize - Web page, Create python setup, Licensing
     * web site
     * github
     * Install on Linux/Mac via package:
         http://marthall.github.io/blog/how-to-package-a-python-app/
         http://python-packaging.readthedocs.io/en/latest/
+        or
+        http://www.pyinstaller.org/
 * authentication module
-* gauges for system dashboard
+* complete site + quick docs
