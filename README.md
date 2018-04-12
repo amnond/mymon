@@ -1,32 +1,46 @@
-# MyMon - a Tornado based, plugin-extendible system diagnostics service
-Supports development/environment of either Python 2.x or Python 3.x 
+# MyMon
 
-# Linux requirements:
+#### a Tornado based, plugin-extendible system diagnostics service
+* Lightweight service
+* Historical tracking of system resource usage (memory, processes, network, cpu etc.)
+* Web browser as client
+* Easily extendible on both server and client
+* Supports either Python 2.x or Python 3.x 
+
+The project was dormant for a while before being moved to github. The current license is GPL. Documentation on use and architecture will gradually be added.
+
+### Linux requirements:
+```
 sudo apt install unzip
 sudo apt install python-pip
 pip install --upgrade pip
-
+```
 ### For the Mymon framework
-    * sudo pip install tornado
+```
+sudo pip install tornado
+```
 
 ### For user management + authentication (as yet unused)
-    * sudo pip install bcrypt
-    * sudo pip install dataset
+```
+sudo pip install bcrypt
+sudo pip install dataset
+```
 
 ### Required for the system plugin for system diagnostic info (memory, cpu, disk etc.)
-    * sudo pip install psutil, which requires:
-      For apt (ubuntu, debian...)
-         * sudo apt-get install python-dev
-             or
-         * sudo apt-get install python3-dev
-      For yum (centos, redhat, fedora...)
-         * sudo yum install python-devel
+```
+sudo pip install psutil, which requires:
+    For apt (ubuntu, debian...)
+        sudo apt-get install python-dev
+               or
+        sudo apt-get install python3-dev
+    For yum (centos, redhat, fedora...)
+        sudo yum install python-devel
 
     For SQLite support on Python 2:
-    * sudo apt-get install sqlite3
-    * sudo apt-get install libsqlite3-dev
-    * sudo pip install pysqlite
-
+        sudo apt-get install sqlite3
+        sudo apt-get install libsqlite3-dev
+        sudo pip install pysqlite
+```
 
 ## File heirarchy example
 ```
