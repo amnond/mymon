@@ -1,16 +1,19 @@
+# MyMon - a Tornado based, plugin-extendible system diagnostics service
+Supports development/environment of either Python 2.x or Python 3.x 
+
 # Linux requirements:
-#sudo apt install unzip
+sudo apt install unzip
 sudo apt install python-pip
 pip install --upgrade pip
 
-## For the Mymon framework
+### For the Mymon framework
     * sudo pip install tornado
 
-## For user management + authentication
+### For user management + authentication (as yet unused)
     * sudo pip install bcrypt
     * sudo pip install dataset
 
-## Required for the system plugin for system diagnostic info (memory, cpu, disk etc.)
+### Required for the system plugin for system diagnostic info (memory, cpu, disk etc.)
     * sudo pip install psutil, which requires:
       For apt (ubuntu, debian...)
          * sudo apt-get install python-dev
@@ -25,8 +28,8 @@ pip install --upgrade pip
     * sudo pip install pysqlite
 
 
-# File Heirarchy
-
+## File heirarchy example
+```
 ├── plugins
 │   ├── system
 │   │   ├── db.py
@@ -103,4 +106,4 @@ pip install --upgrade pip
         │   └── system.html
         └── webtail
             └── webtail.html
-
+```
